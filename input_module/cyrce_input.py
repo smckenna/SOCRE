@@ -356,28 +356,29 @@ class CsfFunction:
         self.identify = identify
 
 
-class CyrceCsfInput:
+class CyrceInput:
 
     def __init__(self,
                  attackMotivators: AttackMotivators,
                  attackSurface: AttackSurface,
                  exploitability: Exploitability,
                  threatActorInput: ThreatActorInput,
-                 impact: Impact,
-                 csf: CsfFunction, scenario: Scenario):
+                 impact: Impact, scenario: Scenario,
+                 csf: CsfFunction, nist80053: nist80053):
         self.impact = impact
         self.threatActorInput = threatActorInput
         self.attackSurface = attackSurface
         self.exploitability = exploitability
         self.attackMotivators = attackMotivators
         self.csf = csf
+        self.csf = nist80053
         self.scenario = scenario
 
 
-class Cyrce80053Input:
-
-    def __init__(self, attackMotivators: AttackMotivators):
-        self.attackMotivators = attackMotivators
+#class Cyrce80053Input:
+#
+#    def __init__(self, attackMotivators: AttackMotivators):
+#        self.attackMotivators = attackMotivators
 
 
 class CyrceTtpCoverageInput:

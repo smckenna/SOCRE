@@ -3,7 +3,7 @@ from flask import request
 from flask_restful import Resource
 import os
 
-from input_module.cyrce_input import CyrceCsfInput, Cyrce80053Input, CyrceTtpCoverageInput, \
+from input_module.cyrce_input import CyrceInput, CyrceTtpCoverageInput, \
     AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, Scenario, DirectImpact, Impact, IndirectImpact, \
     CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, \
     IDAM, IDBE, IDGV, IDRA, IDRM, IDSC, PRAC, PRAT, PRDS, PRIP, PRMA, \
@@ -15,31 +15,31 @@ graph = nx.read_graphml(os.path.join(os.path.dirname(__file__), '../model_resour
 bbn_file = os.path.join(os.path.dirname(__file__), '../scenario_module/scenario_bbn.json')
 
 
-class Cyrce80053Resource(Resource):
+# class Cyrce80053Resource(Resource):
+#
+#     def post(self):
+#         json_data = request.json
+#         cyrce_80053_input = self.json_to_input(json_data)
+#         response = run_cyrce('80053', cyrce_80053_input, graph, bbn_file)
+#         return response.reprJSON()
+#
+#     def json_to_input(self, json_data):
+#         attackMotivators = AttackMotivators(
+#             appeal=json_data['attackMotivators']['appeal'],
+#             targeting=json_data['attackMotivators']['targeting'],
+#             reward=json_data['attackMotivators']['reward'],
+#             perceivedDefenses=json_data['attackMotivators']['perceivedDefenses']
+#         )
+#         return Cyrce80053Input(
+#             attackMotivators=attackMotivators)
+
+
+class CyrceResource(Resource):
 
     def post(self):
         json_data = request.json
-        cyrce_80053_input = self.json_to_input(json_data)
-        response = run_cyrce('80053', cyrce_80053_input, graph, bbn_file)
-        return response.reprJSON()
-
-    def json_to_input(self, json_data):
-        attackMotivators = AttackMotivators(
-            appeal=json_data['attackMotivators']['appeal'],
-            targeting=json_data['attackMotivators']['targeting'],
-            reward=json_data['attackMotivators']['reward'],
-            perceivedDefenses=json_data['attackMotivators']['perceivedDefenses']
-        )
-        return Cyrce80053Input(
-            attackMotivators=attackMotivators)
-
-
-class CyrceCsfResource(Resource):
-
-    def post(self):
-        json_data = request.json
-        cyrce_csf_input = self.json_to_input(json_data)
-        response = run_cyrce('csf', cyrce_csf_input, graph, bbn_file)
+        cyrce_input = self.json_to_input(json_data)
+        response = run_cyrce('csf', cyrce_input, graph, bbn_file)
         return response.reprJSON()
 
     def json_to_input(self, json_data):
@@ -287,12 +287,13 @@ class CyrceCsfResource(Resource):
             recover=recover
         )
 
-        return CyrceCsfInput(
+        return CyrceInput(
             attackMotivators=attackMotivators,
             exploitability=exploitability,
             attackSurface=attackSurface,
             threatActorInput=threatActorInput,
             csf=csf,
+            nist80053=nist80053,
             impact=impact,
             scenario=scenario
         )

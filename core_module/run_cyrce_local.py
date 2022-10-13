@@ -2,12 +2,12 @@ import json
 
 import networkx as nx
 import os
-from input_module.cyrce_input import CyrceCsfInput, \
+from input_module.cyrce_input import CyrceInput, \
     AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, DirectImpact, Impact, IndirectImpact, \
     CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, \
     IDAM, IDBE, IDGV, IDRA, IDRM, IDSC, PRAC, PRAT, PRDS, PRIP, PRMA, \
     PRPT, DEAE, DECM, DEDP, RSRP, RSCO, RSAN, RSMI, RSIM, RCRP, RCIM, RCCO
-from api_resources.cyrce_resource import CyrceCsfResource
+from api_resources.cyrce_resource import CyrceResource
 from core_module.model_main import run_cyrce, run_cyrce_ttp_coverage
 from scenario_module.ScenarioModel import Scenario
 
@@ -67,27 +67,21 @@ if __name__ == '__main__':
                       detect=detect,
                       respond=respond,
                       recover=recover)
-    cyrce_csf_input = CyrceCsfInput(attackMotivators=attackMotivators,
-                                    attackSurface=attackSurface,
-                                    exploitability=exploitability,
-                                    threatActorInput=threatActorInput,
-                                    impact=impact,
-                                    csf=csf,
-                                    scenario=scenario)
-    cyrce_80053_input = CyrceCsfInput(attackMotivators=attackMotivators,
-                                      attackSurface=attackSurface,
-                                      exploitability=exploitability,
-                                      threatActorInput=threatActorInput,
-                                      impact=impact,
-                                      csf=csf,
-                                      scenario=scenario)
-    output_csf = run_cyrce(cyrce_input=cyrce_csf_input, mode='csf', graph=graph, bbn_file=bbn_file)
-    output_80053 = run_cyrce(cyrce_input=cyrce_80053_input, mode='80053', graph=graph, bbn_file=bbn_file)
+    cyrce_input = CyrceInput(attackMotivators=attackMotivators,
+                             attackSurface=attackSurface,
+                             exploitability=exploitability,
+                             threatActorInput=threatActorInput,
+                             impact=impact,
+                             csf=csf, nist80053=nist80053,
+                             scenario=scenario)
+    output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph=graph, bbn_file=bbn_file)
+    output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='80053', graph=graph, bbn_file=bbn_file)
     x = run_cyrce_ttp_coverage(in_val=11111)
 
     # mimic api
     with open('../request.json') as file:
         json_data = json.load(file)
 
-    output_csf_api = run_cyrce('csf', CyrceCsfResource.json_to_input(json_data), graph, bbn_file).reprJSON()
+    cy_res = CyrceResource()
 
+    output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
