@@ -258,6 +258,8 @@ def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
     p11 = (1 - k) * p10  # updated uncertainty
     return x11, p11
 
+
+# temp code to test this
 def run_cyrce_ttp_coverage(in_val):
     print(in_val)
     print("Running run_cyrce_ttp_coverage")
@@ -611,8 +613,10 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
         # Computing confidence intervals
         a.LH_confIntI = get_confidence_interval(a.lhI_vec, alpha=INPUTS['confidenceAlpha'])
         a.LH_confIntR = get_confidence_interval(a.lhR_vec, alpha=INPUTS['confidenceAlpha'])
-        a.imp_confIntI = get_confidence_interval(a.impI_vec[a.manifest['accessI'] == 1], alpha=INPUTS['confidenceAlpha'])
-        a.imp_confIntR = get_confidence_interval(a.impR_vec[a.manifest['accessR'] == 1], alpha=INPUTS['confidenceAlpha'])
+        a.imp_confIntI = get_confidence_interval(a.impI_vec[a.manifest['accessI'] == 1],
+                                                 alpha=INPUTS['confidenceAlpha'])
+        a.imp_confIntR = get_confidence_interval(a.impR_vec[a.manifest['accessR'] == 1],
+                                                 alpha=INPUTS['confidenceAlpha'])
         a.risk_confIntI = get_confidence_interval(a.riskI_vec, alpha=INPUTS['confidenceAlpha'])
         a.risk_confIntR = get_confidence_interval(a.riskR_vec, alpha=INPUTS['confidenceAlpha'])
         if INPUTS['scoring_lambda'] == 0:
@@ -666,7 +670,6 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
         a.riskR = np.mean(a.riskR_vec)
 
         if a.uuid == enterprise.uuid:
-
             # SPM diagnostics
             print("lhI = " + str(np.round(a.lhI, 4)))
             print("impI = " + str(np.round(a.impI, 4)))

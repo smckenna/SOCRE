@@ -7,6 +7,9 @@ from scipy.stats import binom
 from scipy.stats import norm
 import requests
 from shutil import copyfileobj
+from config import INPUTS
+from netaddr import *
+
 # np.seterr(all='raise')
 
 
@@ -205,7 +208,7 @@ def get_tactic_index(foo):
 
 
 def small_poisson(x):
-    return np.random.poisson(x * 10000) * GENERAL['Threat Time Window'] / (10000 * GENERAL['Days Per Year'])
+    return np.random.poisson(x * 10000) * INPUTS['timeWindow'] / (10000 * 1)
 
 
 def small_binom_rvs(n, p, size):
@@ -269,3 +272,4 @@ def create_dir(directory):
 
 def unique_list(x):
     return list(set(x))
+

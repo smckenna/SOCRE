@@ -1,7 +1,7 @@
 import random
 
 
-# hacked, dumbed-down version for single node VISTA model
+# hacked, dumbed-down version for single node model
 
 def from_node_to_node(graph, from_node, objective_node, attack_type, all_assets_list, failed_node_list):
     attack_graph = graph
