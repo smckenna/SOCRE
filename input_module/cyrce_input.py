@@ -378,3 +378,9 @@ class Cyrce80053Input:
 
     def __init__(self, attackMotivators: AttackMotivators):
         self.attackMotivators = attackMotivators
+
+
+class CyrceTtpCoverageInput:
+
+    def __init__(self, foo):
+        self.foo = foo

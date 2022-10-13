@@ -3,13 +3,13 @@ from flask import request
 from flask_restful import Resource
 import os
 
-from input_module.cyrce_input import CyrceCsfInput, Cyrce80053Input,\
+from input_module.cyrce_input import CyrceCsfInput, Cyrce80053Input, CyrceTtpCoverageInput, \
     AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, Scenario, DirectImpact, Impact, IndirectImpact, \
     CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, \
     IDAM, IDBE, IDGV, IDRA, IDRM, IDSC, PRAC, PRAT, PRDS, PRIP, PRMA, \
     PRPT, DEAE, DECM, DEDP, RSRP, RSCO, RSAN, RSMI, RSIM, RCRP, RCIM, RCCO
 
-from core_module.model_main import run_cyrce
+from core_module.model_main import run_cyrce, run_cyrce_ttp_coverage
 
 graph = nx.read_graphml(os.path.join(os.path.dirname(__file__), '../model_resources/enterprise_network_model.graphml'))
 bbn_file = os.path.join(os.path.dirname(__file__), '../scenario_module/scenario_bbn.json')
@@ -296,3 +296,16 @@ class CyrceCsfResource(Resource):
             impact=impact,
             scenario=scenario
         )
+
+
+class CyrceTtpCoverageResource(Resource):
+
+    def post(self):
+        json_data = request.json
+        cyrce_ttp_coverage_input = self.json_to_input(json_data)
+        response = run_cyrce_ttp_coverage(cyrce_ttp_coverage_input)
+        return response.reprJSON()
+
+    def json_to_input(self, json_data):
+        foo = 1
+        return CyrceTtpCoverageInput(foo=foo)

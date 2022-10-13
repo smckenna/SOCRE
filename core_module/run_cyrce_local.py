@@ -1,11 +1,12 @@
 import networkx as nx
 import os
 from input_module.cyrce_input import CyrceCsfInput, Cyrce80053Input, \
-    AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, Scenario, DirectImpact, Impact, IndirectImpact, \
+    AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, DirectImpact, Impact, IndirectImpact, \
     CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, \
     IDAM, IDBE, IDGV, IDRA, IDRM, IDSC, PRAC, PRAT, PRDS, PRIP, PRMA, \
     PRPT, DEAE, DECM, DEDP, RSRP, RSCO, RSAN, RSMI, RSIM, RCRP, RCIM, RCCO
-from core_module.model_main import run_cyrce
+
+from core_module.model_main import run_cyrce, run_cyrce_ttp_coverage
 
 from scenario_module.ScenarioModel import Scenario
 
@@ -81,3 +82,4 @@ if __name__ == '__main__':
                                 scenario=scenario)
     output_csf = run_cyrce(cyrce_input=cyrce_csf_input, mode='csf', graph=graph, bbn_file=bbn_file)
     output_80053 = run_cyrce(cyrce_input=cyrce_80053_input, mode='80053', graph=graph, bbn_file=bbn_file)
+    x = run_cyrce_ttp_coverage(in_val=11111)

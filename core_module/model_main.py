@@ -258,6 +258,10 @@ def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
     p11 = (1 - k) * p10  # updated uncertainty
     return x11, p11
 
+def run_cyrce_ttp_coverage(in_val):
+    print(in_val)
+    print("Running run_cyrce_ttp_coverage")
+
 
 def run_cyrce(mode, cyrce_input, graph, bbn_file):
     """
