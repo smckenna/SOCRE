@@ -12,6 +12,7 @@ application = Flask(__name__)
 api = Api(application)
 
 api.add_resource(CyrceCsfResource, '/v1/cyrce_csf')
+#api.add_resource(CyrceCsfResource, '/v1/vista')  # old endpoint
 api.add_resource(Cyrce80053Resource, '/v1/cyrce_800_53')
 api.add_resource(CyrceTtpCoverageResource, '/v1/cyrce_ttp_coverage')
 api.add_resource(HealthResource, '/v1/health')
