@@ -321,7 +321,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
             a.controls['csf']['respond']['value'] = cyrce_input.csf.respond.value * 1.1
             a.controls['csf']['recover']['value'] = cyrce_input.csf.recover.value * 1.1
 
-    a.allocate_data_space(['impactI', 'impactR', 'accessI', 'accessR', 'riskI', 'riskR'], numberOfMonteCarloRuns)
+        a.allocate_data_space(['impactI', 'impactR', 'accessI', 'accessR', 'riskI', 'riskR'], numberOfMonteCarloRuns)
 
     # Use this metadata to set prior probability of attack
     attackAction = cyrce_input.scenario.attackAction
@@ -330,6 +330,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     attackGeography = cyrce_input.scenario.attackGeography
     attackLossType = cyrce_input.scenario.attackLossType
     attackThreatType = cyrce_input.scenario.attackThreatType
+
     # Need this mapping, for now, since bbn and ui are not aligned in terms of nomenclature
     if attackThreatType == 'threatactor':
         attackThreatType = 'external'
@@ -376,12 +377,12 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
 
     # Pre-allocate space
     attackDict = OrderedDict((k, {}) for k in range(numberOfMonteCarloRuns))
-    riskI = np.zeros((numberOfMonteCarloRuns,))
-    riskR = np.zeros((numberOfMonteCarloRuns,))
-    impactI = np.zeros((numberOfMonteCarloRuns,))
-    impactR = np.zeros((numberOfMonteCarloRuns,))
-    accessI = np.zeros((numberOfMonteCarloRuns,))
-    accessR = np.zeros((numberOfMonteCarloRuns,))
+    # riskI = np.zeros((numberOfMonteCarloRuns,))
+    # riskR = np.zeros((numberOfMonteCarloRuns,))
+    # impactI = np.zeros((numberOfMonteCarloRuns,))
+    # impactR = np.zeros((numberOfMonteCarloRuns,))
+    # accessI = np.zeros((numberOfMonteCarloRuns,))
+    # accessR = np.zeros((numberOfMonteCarloRuns,))
 
     # TODO using this idea, but not sold on it
     # Using baseline Attack Surface metric, update it with attack surface values from inputs
@@ -591,25 +592,12 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
                                                                       respondRecoverRVResidual[iteration], nextNode)
                     logger.debug(' Inherent Impact: ' + str(round(residualImpact, 2)))
                     residualImpact = 0.
-                riskR[iteration] = attackProbability * residualImpact
-                riskI[iteration] = attackProbability * inherentImpact
-                impactR[iteration] = residualImpact
-                impactI[iteration] = inherentImpact
-                accessR[iteration] = residualAccess
-                accessI[iteration] = inherentAccess
                 nextNode.manifest['riskR'][iteration] = attackProbability * residualImpact
                 nextNode.manifest['riskI'][iteration] = attackProbability * inherentImpact
                 nextNode.manifest['impactR'][iteration] = residualImpact
                 nextNode.manifest['impactI'][iteration] = inherentImpact
                 nextNode.manifest['accessR'][iteration] = residualAccess
                 nextNode.manifest['accessI'][iteration] = inherentAccess
-            else:
-                riskR[iteration] = 0.
-                riskI[iteration] = 0.
-                impactR[iteration] = 0.
-                impactI[iteration] = 0.
-                accessR[iteration] = 0.
-                accessI[iteration] = 0.
 
     # Collect MCS results to calculate the outputs we want (for the single enterprise node)
     for a in allEntitiesList:

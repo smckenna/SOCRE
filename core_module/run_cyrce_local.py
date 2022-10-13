@@ -67,19 +67,19 @@ if __name__ == '__main__':
                       respond=respond,
                       recover=recover)
     cyrce_csf_input = CyrceCsfInput(attackMotivators=attackMotivators,
-                                attackSurface=attackSurface,
-                                exploitability=exploitability,
-                                threatActorInput=threatActorInput,
-                                impact=impact,
-                                csf=csf,
-                                scenario=scenario)
+                                    attackSurface=attackSurface,
+                                    exploitability=exploitability,
+                                    threatActorInput=threatActorInput,
+                                    impact=impact,
+                                    csf=csf,
+                                    scenario=scenario)
     cyrce_80053_input = CyrceCsfInput(attackMotivators=attackMotivators,
-                                attackSurface=attackSurface,
-                                exploitability=exploitability,
-                                threatActorInput=threatActorInput,
-                                impact=impact,
-                                csf=csf,
-                                scenario=scenario)
+                                      attackSurface=attackSurface,
+                                      exploitability=exploitability,
+                                      threatActorInput=threatActorInput,
+                                      impact=impact,
+                                      csf=csf,
+                                      scenario=scenario)
     output_csf = run_cyrce(cyrce_input=cyrce_csf_input, mode='csf', graph=graph, bbn_file=bbn_file)
     output_80053 = run_cyrce(cyrce_input=cyrce_80053_input, mode='80053', graph=graph, bbn_file=bbn_file)
     x = run_cyrce_ttp_coverage(in_val=11111)

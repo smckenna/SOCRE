@@ -17,6 +17,6 @@ api.add_resource(CyrceTtpCoverageResource, '/v1/cyrce_ttp_coverage')
 api.add_resource(HealthResource, '/v1/health')
 api.add_resource(RiskAggregationResource, '/v1/risk_aggregation')
 
-# debug parameter not necessary, just suggested by flask documentation during development
+# debug parameter not necessary, just for development
 if __name__ == '__main__':
     application.run(debug=True)
