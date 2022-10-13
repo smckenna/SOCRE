@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns"  
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns
+     http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+    <key attr.name="ip_range" attr.type="string" for="node" id="k0" />
+    <key attr.name="label" attr.type="string" for="node" id="k1" />
+    <graph id="Enterprise_Model" edgedefault="directed">
+    <node id="internet">
+        <data key="k0">0.0.0.0/32</data>
+        <data key="k1">Internet</data>
+    </node>
+    <node id="enterprise">
+        <data key="k0">192.168.1.1/32</data>
+        <data key="k1">Enterprise</data>
+    </node>
+        <node id="hub">
+        <data key="k0">255.255.255.252/32</data>
+        <data key="k1">Model Hub Node</data>
+    </node>
+    <edge source="internet" target="hub"/>
+    <edge source="hub" target="enterprise"/>
+  </graph>
+</graphml>
