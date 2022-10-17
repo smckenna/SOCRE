@@ -72,7 +72,7 @@ if __name__ == '__main__':
                              exploitability=exploitability,
                              threatActorInput=threatActorInput,
                              impact=impact,
-                             csf=csf, nist80053=nist80053,
+                             csf=csf, nist80053=0, #nist80053,
                              scenario=scenario)
     output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph=graph, bbn_file=bbn_file)
     output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='80053', graph=graph, bbn_file=bbn_file)
@@ -85,3 +85,4 @@ if __name__ == '__main__':
     cy_res = CyrceResource()
 
     output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
+    output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
