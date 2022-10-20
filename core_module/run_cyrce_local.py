@@ -9,7 +9,7 @@ from input_module.cyrce_input import CyrceInput, \
     PRPT, DEAE, DECM, DEDP, RSRP, RSCO, RSAN, RSMI, RSIM, RCRP, RCIM, RCCO
 from api_resources.cyrce_resource import CyrceResource
 from core_module.model_main import run_cyrce
-from core_module.analysis import run_cyrce_ttp_coverage
+from core_module.analysis import run_ttp_coverage_metric
 from scenario_module.ScenarioModel import Scenario
 
 if __name__ == '__main__':
@@ -85,9 +85,10 @@ if __name__ == '__main__':
 
     cy_res = CyrceResource()
 
-    output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
+    # output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
     # output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
 
     with open('../nist80053.json') as file:
         json_data = json.load(file)
-    x = run_cyrce_ttp_coverage(control_json=json_data)
+    attack_coverage_metric = run_ttp_coverage_metric(scenario=1, ctrls_dict=json_data)
+    print(round(attack_coverage_metric,1))

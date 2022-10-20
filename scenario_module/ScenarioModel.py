@@ -9,7 +9,8 @@ class Scenario:
 
     def __init__(self, bbn_file, attackGeography=None, attackAction=None, attackThreatType=None,
                  attackLossType=None, orgSize=None, attackIndustry=None, attackTarget=None,
-                 aprioriProbability=0.05):
+                 aprioriProbability=0.05, label="Scenario"):
+        self.label = label
         self.uuid = uuid4()
         self.bbn_file = bbn_file
         self.aprioriProbability = aprioriProbability
@@ -21,6 +22,8 @@ class Scenario:
         self.orgSize = orgSize
         self.attackThreatType = attackThreatType
         self.attackTarget = attackTarget
+        self.veris_threat_actions = []
+        self.ttps = []
 
     def determine_scenario_probability(self, verbose=False):
         """

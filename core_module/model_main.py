@@ -16,6 +16,7 @@ from helpers.helper_functions import get_confidence_interval
 from collections import OrderedDict
 from pert import PERT
 import numpy as np
+import os
 from scipy.stats import uniform, norm
 
 
@@ -274,8 +275,10 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     :param bbn_file: pybbn bbn as json
     :return: outputs
     """
-    # used for testing, etc.-+
-    np.random.seed(101798)
+
+    # used for testing, etc.
+    if os.uname()[1] == 'BAHG3479J3':
+        np.random.seed(101798)
 
     numberOfMonteCarloRuns = INPUTS['numberOfMonteCarloRuns']
     impactCalcMode = INPUTS['impactCalcMode']
@@ -283,7 +286,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     riskMode = INPUTS['riskMode']
     coeffs = INPUTS['tac_v_ctrl_coeffs']
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger('Main')
 
     # Compute total impact from direct and indirect

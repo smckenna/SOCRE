@@ -9,8 +9,18 @@ import requests
 from shutil import copyfileobj
 from config import INPUTS
 from netaddr import *
+from pandas import read_excel
 
 # np.seterr(all='raise')
+
+
+def fetch_excel_data(url, sheet_name, use_cols=None, skip_rows=0, data_type=str):
+    local_filename = 'tmp.xlsx'
+    with requests.get(url, stream=True) as r:
+        with open(local_filename, 'wb') as f:
+            copyfileobj(r.raw, f)
+    print("loading " + sheet_name + " from " + url)
+    return read_excel(local_filename, sheet_name=sheet_name, usecols=use_cols, skiprows=skip_rows, dtype=data_type)
 
 
 def get_confidence_interval(x, alpha=0.05):
