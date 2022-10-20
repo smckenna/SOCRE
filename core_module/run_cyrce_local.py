@@ -8,7 +8,8 @@ from input_module.cyrce_input import CyrceInput, \
     IDAM, IDBE, IDGV, IDRA, IDRM, IDSC, PRAC, PRAT, PRDS, PRIP, PRMA, \
     PRPT, DEAE, DECM, DEDP, RSRP, RSCO, RSAN, RSMI, RSIM, RCRP, RCIM, RCCO
 from api_resources.cyrce_resource import CyrceResource
-from core_module.model_main import run_cyrce, run_cyrce_ttp_coverage
+from core_module.model_main import run_cyrce
+from core_module.analysis import run_cyrce_ttp_coverage
 from scenario_module.ScenarioModel import Scenario
 
 if __name__ == '__main__':
@@ -26,7 +27,7 @@ if __name__ == '__main__':
     scenario = Scenario(attackAction='hacking', attackThreatType='threatactor', attackTarget='enterprise',
                         attackLossType='c', attackIndustry='information', attackGeography='na', orgSize="large",
                         bbn_file=bbn_file)
-    #scenario = Scenario(bbn_file=bbn_file)  # know nothing case; posterior is prior
+    # scenario = Scenario(bbn_file=bbn_file)  # know nothing case; posterior is prior
     identify = CsfIdentify(IDAM=IDAM(0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
                            IDBE=IDBE(0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
                            IDGV=IDGV(0.8, 0.8, 0.8, 0.8, 0.8),
@@ -73,11 +74,10 @@ if __name__ == '__main__':
                              exploitability=exploitability,
                              threatActorInput=threatActorInput,
                              impact=impact,
-                             csf=csf, nist80053=0, #nist80053,
+                             csf=csf, nist80053=0,  # nist80053,
                              scenario=scenario)
-    #output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph=graph, bbn_file=bbn_file)
+    # output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph=graph, bbn_file=bbn_file)
     # output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='80053', graph=graph, bbn_file=bbn_file)
-    # x = run_cyrce_ttp_coverage(in_val=11111)
     #
     # mimic api
     with open('../request.json') as file:
@@ -87,3 +87,7 @@ if __name__ == '__main__':
 
     output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
     # output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
+
+    with open('../nist80053.json') as file:
+        json_data = json.load(file)
+    x = run_cyrce_ttp_coverage(control_json=json_data)
