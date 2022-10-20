@@ -24,10 +24,10 @@ class ThreatActorInput:
     def __init__(self, determination: str, resources: str, sophistication: str):
         # TODO make it so if they only know type, then pass that and the other 3 are populated based on type
         self.sophistication = THREAT_ACTOR_CAPACITY_VALUES['sophistication'][sophistication]
-        self.resources = THREAT_ACTOR_CAPACITY_VALUES['api_resources'][resources]
+        self.resources = THREAT_ACTOR_CAPACITY_VALUES['resources'][resources]
         self.determination = THREAT_ACTOR_CAPACITY_VALUES['determination'][determination]
         self.sophisticationWeight = THREAT_ACTOR_CAPACITY_WEIGHTS['sophistication']
-        self.resourcesWeight = THREAT_ACTOR_CAPACITY_WEIGHTS['api_resources']
+        self.resourcesWeight = THREAT_ACTOR_CAPACITY_WEIGHTS['resources']
         self.determinationWeight = THREAT_ACTOR_CAPACITY_WEIGHTS['determination']
 
 

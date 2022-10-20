@@ -3,13 +3,13 @@ from uuid import uuid4
 
 class ThreatActor:
 
-    def __init__(self, label="threat actor"):
+    def __init__(self, label="Threat Actor"):
         self.uuid = uuid4()
         self.label = label
         self.properties = {'motivation': 0,
                            "sophistication": 0,
                            "type": "",
-                           "api_resources": 0,
+                           "resources": 0,
                            "capacity": 0,
                            "origin": "",
                            "targets": []}
@@ -61,4 +61,4 @@ class ThreatActor:
 
 
 if __name__ == '__main__':
-    threat_actor = ThreatActor(uuid=uu.uuid4(), label="apt1")
+    threat_actor = ThreatActor(label="APT1")

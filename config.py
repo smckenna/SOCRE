@@ -25,7 +25,7 @@ THREAT_ACTOR_CAPACITY_VALUES = {
         'medium': 0.5,
         'high': 0.9
     },
-    'api_resources': {
+    'resources': {
         'individual': 0.2,
         'club': 0.4,
         'contest': 0.1,
@@ -46,5 +46,5 @@ THREAT_ACTOR_CAPACITY_VALUES = {
 THREAT_ACTOR_CAPACITY_WEIGHTS = {
     'determination': 0.9,
     'sophistication': 1,
-    'api_resources': 0.8
+    'resources': 0.8
 }
