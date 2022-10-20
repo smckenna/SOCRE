@@ -9,10 +9,9 @@ class Scenario:
 
     def __init__(self, bbn_file, attackGeography=None, attackAction=None, attackThreatType=None,
                  attackLossType=None, orgSize=None, attackIndustry=None, attackTarget=None,
-                 aprioriProbability=0.5):
-        self.uuid =uuid4()
+                 aprioriProbability=0.05):
+        self.uuid = uuid4()
         self.bbn_file = bbn_file
-        self.bbn_incident_prob = 0.5  # for T
         self.aprioriProbability = aprioriProbability
         self.posteriorProbability = aprioriProbability
         self.attackGeography = attackGeography
@@ -32,12 +31,15 @@ class Scenario:
         bbn = Bbn.from_json(self.bbn_file)
 
         # convert the BBN to a join tree
-        join_tree = InferenceController.apply(bbn)
+        join_tree_ = InferenceController.apply(bbn)
+
+        # update bbn with prior
+        join_tree = InferenceController.reapply(join_tree_, {0: [self.aprioriProbability, 1 - self.aprioriProbability]})
 
         # insert evidence
         if (self.attackGeography is not None) and (self.attackGeography != "global"):
             ev1 = EvidenceBuilder() \
-                .with_node(join_tree.get_bbn_node_by_name('region')) \
+                .with_node(join_tree.get_bbn_node_by_name('geography')) \
                 .with_evidence(self.attackGeography, 1.0) \
                 .build()
             join_tree.set_observation(ev1)
@@ -51,14 +53,14 @@ class Scenario:
 
         if self.attackThreatType is not None:
             ev3 = EvidenceBuilder() \
-                .with_node(join_tree.get_bbn_node_by_name('actor')) \
+                .with_node(join_tree.get_bbn_node_by_name('threatType')) \
                 .with_evidence(self.attackThreatType, 1.0) \
                 .build()
             join_tree.set_observation(ev3)
 
         if self.attackLossType is not None:
             ev4 = EvidenceBuilder() \
-                .with_node(join_tree.get_bbn_node_by_name('attribute')) \
+                .with_node(join_tree.get_bbn_node_by_name('impactType')) \
                 .with_evidence(self.attackLossType, 1.0) \
                 .build()
             join_tree.set_observation(ev4)
@@ -72,7 +74,7 @@ class Scenario:
 
         if (self.orgSize is not None) and (self.orgSize != "unknown"):
             ev6 = EvidenceBuilder() \
-                .with_node(join_tree.get_bbn_node_by_name('orgSize')) \
+                .with_node(join_tree.get_bbn_node_by_name('size')) \
                 .with_evidence(self.orgSize, 1.0) \
                 .build()
             join_tree.set_observation(ev6)
@@ -84,19 +86,24 @@ class Scenario:
         # join_tree.set_observation(ev7)
 
         # print all the marginal probabilities
+        if verbose:
+            for node, posteriors in join_tree.get_posteriors().items():
+                p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
+                print(f'{node} : {p}')
+
         potentialOut = 0
         for node in join_tree.get_bbn_nodes():
             potential = join_tree.get_bbn_potential(node)
             if verbose:
                 print(potential)
             if node.variable.name == 'incident':
-                if potential.entries[0].entries.values() == 'T':
+                if 'T' in potential.entries[0].entries.values():
                     potentialOut = potential.entries[0].value
                 else:
                     potentialOut = potential.entries[1].value
 
-        self.posteriorProbability = max([0.001, potentialOut]) * \
-                                    (self.aprioriProbability - self.bbn_incident_prob) + self.bbn_incident_prob
+        self.posteriorProbability = potentialOut
+        print(round(100 * self.posteriorProbability, 1))
 
 
 if __name__ == '__main__':
@@ -106,13 +113,12 @@ if __name__ == '__main__':
     #                    attackThreatType='external', aprioriProbability=0.5)
     # scenario = Scenario(bbn_file, attackAction='hacking', attackGeography='na', attackIndustry='professional', aprioriProbability=0.5)
     scenario = Scenario(bbn_file, attackLossType='a', orgSize='small', attackAction='social', attackGeography='na',
-                        attackIndustry='professional', aprioriProbability=0.5)
-    scenario = Scenario(bbn_file, attackThreatType='internal', attackAction='misuse', aprioriProbability=0.5)
-    scenario = Scenario(bbn_file, attackIndustry='retail', orgSize='small', attackThreatType='external',
-                        attackAction='malware',
+                        attackIndustry='professional', aprioriProbability=0.05)
+    scenario = Scenario(bbn_file, attackThreatType='internal', attackAction='misuse', aprioriProbability=0.05)
+    scenario = Scenario(bbn_file, attackIndustry='information', orgSize='large', attackThreatType='threatActor',
+                        attackAction='malware', attackGeography='na',
                         attackLossType='c', aprioriProbability=0.05)
-    #scenario = Scenario(bbn_file, aprioriProbability=0)
-    scenario.determine_scenario_probability(verbose=True)
+    #    scenario = Scenario(bbn_file, aprioriProbability=0)
+    scenario.determine_scenario_probability(verbose=False)
 
-    print(round(100. * scenario.posteriorProbability, 1))
-    print(round((1 - scenario.posteriorProbability) * 100., 1))
+    #print(round(100 * scenario.posteriorProbability, 1))

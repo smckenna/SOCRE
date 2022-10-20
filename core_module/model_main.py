@@ -283,7 +283,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     riskMode = INPUTS['riskMode']
     coeffs = INPUTS['tac_v_ctrl_coeffs']
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger('Main')
 
     # Compute total impact from direct and indirect
@@ -338,8 +338,10 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
         attackThreatType = 'external'
     elif attackThreatType == 'insider':
         attackThreatType = 'internal'
-    else:
+    elif attackThreatType == 'thirdparty':
         attackThreatType = 'partner'
+    else:
+        attackThreatType = None
 
     orgSize = cyrce_input.scenario.orgSize
 
@@ -347,7 +349,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
                                       attackGeography=attackGeography, attackLossType=attackLossType,
                                       attackIndustry=attackIndustry, orgSize=orgSize,
                                       aprioriProbability=INPUTS['baselineProbability'], bbn_file=bbn_file)
-    scenario.determine_scenario_probability()
+    scenario.determine_scenario_probability(verbose=True)
 
     # TODO make these entries optional, if that is deemed a good idea, then update them as below if there is info to
     # use for the update, o/w use baseline
