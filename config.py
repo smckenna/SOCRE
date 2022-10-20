@@ -3,7 +3,7 @@ INPUTS = {
     'impactCalcMode': 'mean',  # mean or max
     'riskMode': 'probabilistic',  # certainty or probabilistic
     'timeWindow': 1,  # 1 year
-    'baselineProbability': 0.25,
+    'baselineProbability': 0.15,
     'confidenceAlpha': 0.05,
     'scoring_lambda': 0.2,
     'scoring_fit': [11.80, -2.95],

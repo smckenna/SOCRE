@@ -334,14 +334,14 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     attackThreatType = cyrce_input.scenario.attackThreatType
 
     # Need this mapping, for now, since bbn and ui are not aligned in terms of nomenclature
-    if attackThreatType == 'threatactor':
-        attackThreatType = 'external'
-    elif attackThreatType == 'insider':
-        attackThreatType = 'internal'
-    elif attackThreatType == 'thirdparty':
-        attackThreatType = 'partner'
-    else:
-        attackThreatType = None
+#    if attackThreatType == 'threatActor':
+#        attackThreatType = 'external'
+#    elif attackThreatType == 'insider':
+#        attackThreatType = 'internal'
+#    elif attackThreatType == 'thirdparty':
+#        attackThreatType = 'partner'
+#    else:
+#        attackThreatType = None
 
     orgSize = cyrce_input.scenario.orgSize
 

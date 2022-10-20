@@ -115,7 +115,7 @@ if __name__ == '__main__':
     scenario = Scenario(bbn_file, attackLossType='a', orgSize='small', attackAction='social', attackGeography='na',
                         attackIndustry='professional', aprioriProbability=0.05)
     scenario = Scenario(bbn_file, attackThreatType='internal', attackAction='misuse', aprioriProbability=0.05)
-    scenario = Scenario(bbn_file, attackIndustry='information', orgSize='large', attackThreatType='threatActor',
+    scenario = Scenario(bbn_file, attackIndustry='information', orgSize='large', attackThreatType='threatactor',
                         attackAction='malware', attackGeography='na',
                         attackLossType='c', aprioriProbability=0.05)
     #    scenario = Scenario(bbn_file, aprioriProbability=0)

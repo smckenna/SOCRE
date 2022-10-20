@@ -16,17 +16,17 @@ if __name__ == '__main__':
         os.path.join(os.path.dirname(__file__), '../model_resources/enterprise_network_model.graphml'))
     bbn_file = os.path.join(os.path.dirname(__file__), '../scenario_module/scenario_bbn.json')
 
-    attackMotivators = AttackMotivators(4.5, 4.5, 4.5, 2.5)
+    attackMotivators = AttackMotivators(2.5, 2.5, 2.5, 2.5)
     attackSurface = AttackSurface(2.5, 2.5)
     exploitability = Exploitability(2.5)
     threatActorInput = ThreatActorInput(determination='high', resources='government', sophistication='strategic')
     directImpact = DirectImpact(3, 3, 2, 1)
     indirectImpact = IndirectImpact(3, 3, 2, 1)
     impact = Impact(directImpact, indirectImpact)
-    scenario = Scenario(attackAction='malware', attackThreatType='threatactor', attackTarget='enterprise',
-                        attackLossType='c', attackIndustry='information', attackGeography='na', orgSize="small",
+    scenario = Scenario(attackAction='hacking', attackThreatType='threatactor', attackTarget='enterprise',
+                        attackLossType='c', attackIndustry='information', attackGeography='na', orgSize="large",
                         bbn_file=bbn_file)
-    scenario = Scenario(bbn_file=bbn_file)
+    #scenario = Scenario(bbn_file=bbn_file)  # know nothing case; posterior is prior
     identify = CsfIdentify(IDAM=IDAM(0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
                            IDBE=IDBE(0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
                            IDGV=IDGV(0.8, 0.8, 0.8, 0.8, 0.8),
@@ -75,15 +75,15 @@ if __name__ == '__main__':
                              impact=impact,
                              csf=csf, nist80053=0, #nist80053,
                              scenario=scenario)
-    output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph=graph, bbn_file=bbn_file)
+    #output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph=graph, bbn_file=bbn_file)
     # output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='80053', graph=graph, bbn_file=bbn_file)
     # x = run_cyrce_ttp_coverage(in_val=11111)
     #
-    # # mimic api
-    # with open('../request.json') as file:
-    #     json_data = json.load(file)
-    #
-    # cy_res = CyrceResource()
-    #
-    # output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
+    # mimic api
+    with open('../request.json') as file:
+        json_data = json.load(file)
+
+    cy_res = CyrceResource()
+
+    output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
     # output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
