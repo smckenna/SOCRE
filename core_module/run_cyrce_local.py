@@ -76,7 +76,7 @@ if __name__ == '__main__':
                              impact=impact,
                              csf=csf, nist80053=0,  # nist80053,
                              scenario=scenario)
-    # output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph=graph, bbn_file=bbn_file)
+    output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph=graph, bbn_file=bbn_file)
     # output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='80053', graph=graph, bbn_file=bbn_file)
     #
     # mimic api
@@ -85,10 +85,10 @@ if __name__ == '__main__':
 
     cy_res = CyrceResource()
 
-    # output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
+    output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
     # output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
 
     with open('../nist80053.json') as file:
         json_data = json.load(file)
     attack_coverage_metric = run_ttp_coverage_metric(scenario=1, ctrls_dict=json_data)
-    print(round(attack_coverage_metric,1))
+    print(round(attack_coverage_metric, 1))

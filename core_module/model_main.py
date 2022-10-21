@@ -16,7 +16,7 @@ from helpers.helper_functions import get_confidence_interval
 from collections import OrderedDict
 from pert import PERT
 import numpy as np
-import os
+import platform
 from scipy.stats import uniform, norm
 
 
@@ -277,7 +277,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     """
 
     # used for testing, etc.
-    if os.uname()[1] == 'BAHG3479J3':
+    if platform.uname()[1] == 'BAHG3479J3':
         np.random.seed(101798)
 
     numberOfMonteCarloRuns = INPUTS['numberOfMonteCarloRuns']
@@ -352,7 +352,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
                                       attackGeography=attackGeography, attackLossType=attackLossType,
                                       attackIndustry=attackIndustry, orgSize=orgSize,
                                       aprioriProbability=INPUTS['baselineProbability'], bbn_file=bbn_file)
-    scenario.determine_scenario_probability(verbose=True)
+    scenario.determine_scenario_probability(verbose=False)
 
     # TODO make these entries optional, if that is deemed a good idea, then update them as below if there is info to
     # use for the update, o/w use baseline

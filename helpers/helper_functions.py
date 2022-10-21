@@ -19,7 +19,7 @@ def fetch_excel_data(url, sheet_name, use_cols=None, skip_rows=0, data_type=str)
     with requests.get(url, stream=True) as r:
         with open(local_filename, 'wb') as f:
             copyfileobj(r.raw, f)
-    print("loading " + sheet_name + " from " + url)
+    print(" >>>> Loading " + sheet_name + " from " + url + " ...")
     return read_excel(local_filename, sheet_name=sheet_name, usecols=use_cols, skiprows=skip_rows, dtype=data_type)
 
 

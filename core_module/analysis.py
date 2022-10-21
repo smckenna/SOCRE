@@ -1,11 +1,8 @@
-'''
+"""
 Routines that supports CyRCE and does other analysis
-'''
+"""
 
 import logging
-from output_module.cyrce_output import ValueVar
-import numpy as np
-import pandas as pd
 from copy import deepcopy
 import json
 from helpers.helper_functions import fetch_excel_data
@@ -68,7 +65,7 @@ def run_ttp_coverage_metric(scenario, ctrls_dict):
 
     for ttp in ttps:
         ctrl = ttp_to_controls[ttp]
-        in_scope_controls.append(ctrl.replace('-', '_'))
+        in_scope_controls.append(ctrl)
 
     m = 0
     n = 0
