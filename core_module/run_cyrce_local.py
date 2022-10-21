@@ -6,7 +6,8 @@ from input_module.cyrce_input import CyrceInput, \
     AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, DirectImpact, Impact, IndirectImpact, \
     CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, \
     IDAM, IDBE, IDGV, IDRA, IDRM, IDSC, PRAC, PRAT, PRDS, PRIP, PRMA, \
-    PRPT, DEAE, DECM, DEDP, RSRP, RSCO, RSAN, RSMI, RSIM, RCRP, RCIM, RCCO
+    PRPT, DEAE, DECM, DEDP, RSRP, RSCO, RSAN, RSMI, RSIM, RCRP, RCIM, RCCO, AT_1, AT_2, AT_3, AT_4, RA_1, RA_2, RA_3, \
+    RA_5, RA_7, RA_9, AT, RA, Nist80053_
 from api_resources.cyrce_resource import CyrceResource
 from core_module.model_main import run_cyrce
 from core_module.analysis import run_ttp_coverage_metric
@@ -69,26 +70,41 @@ if __name__ == '__main__':
                       detect=detect,
                       respond=respond,
                       recover=recover)
+    ra_1 = RA_1(value=0.25)
+    ra_2 = RA_2(value=0.75)
+    ra_3 = RA_3(value=0.5)
+    ra_5 = RA_5(value=0.25)
+    ra_7 = RA_7(value=0.75)
+    ra_9 = RA_9(value=0.5)
+    ra = RA(value=0.5, RA_1=ra_1.value, RA_2=ra_2.value, RA_3=ra_3.value, RA_5=ra_5.value, RA_7=ra_7.value, RA_9=ra_9.value)
+    at_1 = AT_1(value=0.25)
+    at_2 = AT_2(value=0.5)
+    at_3 = AT_3(value=0.75)
+    at_4 = AT_4(value=0.5)
+    at = RA(value=0.5, RA_1=ra_1.value, RA_2=ra_2.value, RA_3=ra_3.value, RA_5=ra_5.value,
+            RA_7=ra_7.value, RA_9=ra_9)
+    nist80053 = Nist80053_(RA=ra, AT=at)
+
     cyrce_input = CyrceInput(attackMotivators=attackMotivators,
                              attackSurface=attackSurface,
                              exploitability=exploitability,
                              threatActorInput=threatActorInput,
                              impact=impact,
-                             csf=csf, nist80053=0,  # nist80053,
+                             csf=csf, nist80053=nist80053,
                              scenario=scenario)
-    output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph=graph, bbn_file=bbn_file)
-    # output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='80053', graph=graph, bbn_file=bbn_file)
-    #
+    #output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph=graph, bbn_file=bbn_file)
+    output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='80053', graph=graph, bbn_file=bbn_file)
+
     # mimic api
     with open('../request.json') as file:
         json_data = json.load(file)
 
     cy_res = CyrceResource()
 
-    output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
-    # output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
+    #output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
+    #output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
 
-#    with open('../nist80053.json') as file:
-#        json_data = json.load(file)
-#    attack_coverage_metric = run_ttp_coverage_metric(scenario=1, ctrls_dict=json_data)
-#    print(round(attack_coverage_metric, 1))
+    with open('../nist80053.json') as file:
+        json_data = json.load(file)
+    attack_coverage_metric = run_ttp_coverage_metric(scenario=1, ctrls_dict=json_data)
+    print(round(attack_coverage_metric, 1))

@@ -1592,6 +1592,12 @@ class SR:
         self.SR_12 = SR_12
 
 
+class Nist80053_:
+    def __init__(self, AT: AT,  RA: RA, ):
+        self.AT = AT
+        self.RA = RA
+
+
 class Nist80053:
     def __init__(self, AC: AC, AT: AT, AU: AU, CA: CA, CM: CM, CP: CP, IA: IA, IR: IR, MA: MA, MP: MP, PE: PE,
                  PL: PL, PS: PS, RA: RA, SA: SA, SC: SC, SI: SI, SR: SR):

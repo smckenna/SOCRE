@@ -316,11 +316,9 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
             a.controls['csf']['respond']['value'] = cyrce_input.csf.respond.value
             a.controls['csf']['recover']['value'] = cyrce_input.csf.recover.value
         elif mode == '80053':
-            a.controls['csf']['identify']['value'] = cyrce_input.csf.identify.value * 1.1
-            a.controls['csf']['protect']['value'] = cyrce_input.csf.protect.value * 1.1
-            a.controls['csf']['detect']['value'] = cyrce_input.csf.detect.value * 1.1
-            a.controls['csf']['respond']['value'] = cyrce_input.csf.respond.value * 1.1
-            a.controls['csf']['recover']['value'] = cyrce_input.csf.recover.value * 1.1
+            a.controls['80053']['AT'] = cyrce_input.nist80053.AT
+            a.controls['80053']['RA'] = cyrce_input.nist80053.RA
+
 
         a.allocate_data_space(['impactI', 'impactR', 'accessI', 'accessR', 'riskI', 'riskR'], numberOfMonteCarloRuns)
 
