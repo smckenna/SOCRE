@@ -1592,13 +1592,13 @@ class SR:
         self.SR_12 = SR_12
 
 
-class Nist80053_:
+class Sp80053_:
     def __init__(self, AT: AT,  RA: RA, ):
         self.AT = AT
         self.RA = RA
 
 
-class Nist80053:
+class Sp80053:
     def __init__(self, AC: AC, AT: AT, AU: AU, CA: CA, CM: CM, CP: CP, IA: IA, IR: IR, MA: MA, MP: MP, PE: PE,
                  PL: PL, PS: PS, RA: RA, SA: SA, SC: SC, SI: SI, SR: SR):
         self.AC = AC
@@ -1629,14 +1629,14 @@ class CyrceInput:
                  exploitability: Exploitability,
                  threatActorInput: ThreatActorInput,
                  impact: Impact, scenario: Scenario,
-                 csf: CsfFunction, nist80053: Nist80053):
+                 csf: CsfFunction, sp80053: Sp80053):
         self.impact = impact
         self.threatActorInput = threatActorInput
         self.attackSurface = attackSurface
         self.exploitability = exploitability
         self.attackMotivators = attackMotivators
         self.csf = csf
-        self.nist80053 = nist80053
+        self.sp80053 = sp80053
         self.scenario = scenario
 
 

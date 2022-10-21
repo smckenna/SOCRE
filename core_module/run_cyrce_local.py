@@ -7,7 +7,7 @@ from input_module.cyrce_input import CyrceInput, \
     CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, \
     IDAM, IDBE, IDGV, IDRA, IDRM, IDSC, PRAC, PRAT, PRDS, PRIP, PRMA, \
     PRPT, DEAE, DECM, DEDP, RSRP, RSCO, RSAN, RSMI, RSIM, RCRP, RCIM, RCCO, AT_1, AT_2, AT_3, AT_4, RA_1, RA_2, RA_3, \
-    RA_5, RA_7, RA_9, AT, RA, Nist80053_
+    RA_5, RA_7, RA_9, AT, RA, Sp80053_
 from api_resources.cyrce_resource import CyrceResource
 from core_module.model_main import run_cyrce
 from core_module.analysis import run_ttp_coverage_metric
@@ -83,17 +83,17 @@ if __name__ == '__main__':
     at_4 = AT_4(value=0.5)
     at = RA(value=0.5, RA_1=ra_1.value, RA_2=ra_2.value, RA_3=ra_3.value, RA_5=ra_5.value,
             RA_7=ra_7.value, RA_9=ra_9)
-    nist80053 = Nist80053_(RA=ra, AT=at)
+    sp80053 = Sp80053_(RA=ra, AT=at)
 
     cyrce_input = CyrceInput(attackMotivators=attackMotivators,
                              attackSurface=attackSurface,
                              exploitability=exploitability,
                              threatActorInput=threatActorInput,
                              impact=impact,
-                             csf=csf, nist80053=nist80053,
+                             csf=csf, sp80053=sp80053,
                              scenario=scenario)
-    #output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph=graph, bbn_file=bbn_file)
-    output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='80053', graph=graph, bbn_file=bbn_file)
+    output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph=graph, bbn_file=bbn_file)
+    #output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='80053', graph=graph, bbn_file=bbn_file)
 
     # mimic api
     with open('../request.json') as file:
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     #output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
     #output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
 
-    with open('../nist80053.json') as file:
+    with open('../sp80053.json') as file:
         json_data = json.load(file)
     attack_coverage_metric = run_ttp_coverage_metric(scenario=1, ctrls_dict=json_data)
     print(round(attack_coverage_metric, 1))

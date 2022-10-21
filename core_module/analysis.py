@@ -6,7 +6,9 @@ import logging
 from copy import deepcopy
 import json
 from helpers.helper_functions import fetch_excel_data
-
+import mitreattack.attackToExcel.attackToExcel as attackToExcel
+import mitreattack.attackToExcel.stixToDf as stixToDf
+import numpy as np
 
 def update_nist_json(ctrls_dict):
     """
@@ -27,7 +29,7 @@ def update_nist_json(ctrls_dict):
                         del new_dict[fam][k1][k2]
                         new_dict[fam][k1] = val
 
-    with open('../nist80053.json', 'wt') as file:
+    with open('../sp80053.json', 'wt') as file:
         json.dump(new_dict, file)
     return 1
 
@@ -76,3 +78,30 @@ def run_ttp_coverage_metric(scenario, ctrls_dict):
                 m = m + ctrls_dict[fam][ctrl]
                 n += 1
     return m / n * 100.
+
+
+def mit():
+    # Download and parse ATT&CK STIX data
+    attackdata = attackToExcel.get_stix_data("enterprise-attack")
+    techniques_data = stixToDf.techniquesToDf(attackdata, "enterprise-attack")
+    tactics_data = stixToDf.tacticsToDf(attackdata)
+
+    # Show T1102 and sub-techniques of T1102
+    techniques_df = techniques_data["techniques"]
+    print(techniques_df[techniques_df["ID"].str.contains("T1102")]["name"])
+    # Show citation data for LOLBAS Wmic reference
+    citations_df = techniques_data["citations"]
+    print(citations_df[citations_df["reference"].str.contains("LOLBAS Wmic")])
+    #tactic_lbls = np.unique(techniques_df.tactics)
+    #app_tactic_list = []
+    #for t in tactic_lbls:
+    #    tacs_ = tactic_lbls[1].split(',')
+    #    for tc in tacs_:
+    #        app_tactic_list.append(tc.strip())
+    # LAYERS OF CONTROLS
+    tactic_list = tactics_data['tactics'].name.tolist()
+    phase_dict = {key: {'ttps': [], 'sp80053': []} for key in tactic_list}
+    b=1
+
+if __name__ == '__main__':
+    mit()

@@ -316,8 +316,8 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
             a.controls['csf']['respond']['value'] = cyrce_input.csf.respond.value
             a.controls['csf']['recover']['value'] = cyrce_input.csf.recover.value
         elif mode == '80053':
-            a.controls['80053']['AT'] = cyrce_input.nist80053.AT
-            a.controls['80053']['RA'] = cyrce_input.nist80053.RA
+            a.controls['80053']['AT'] = cyrce_input.sp80053.AT
+            a.controls['80053']['RA'] = cyrce_input.sp80053.RA
 
 
         a.allocate_data_space(['impactI', 'impactR', 'accessI', 'accessR', 'riskI', 'riskR'], numberOfMonteCarloRuns)
@@ -329,17 +329,6 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     attackGeography = cyrce_input.scenario.attackGeography
     attackLossType = cyrce_input.scenario.attackLossType
     attackThreatType = cyrce_input.scenario.attackThreatType
-
-    # Need this mapping, for now, since bbn and ui are not aligned in terms of nomenclature
-#    if attackThreatType == 'threatActor':
-#        attackThreatType = 'external'
-#    elif attackThreatType == 'insider':
-#        attackThreatType = 'internal'
-#    elif attackThreatType == 'thirdparty':
-#        attackThreatType = 'partner'
-#    else:
-#        attackThreatType = None
-
     orgSize = cyrce_input.scenario.orgSize
 
     scenario = ScenarioModel.Scenario(attackAction=attackAction, attackThreatType=attackThreatType,
