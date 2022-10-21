@@ -300,16 +300,12 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     allEntitiesList = [enterprise]
 
     # Set up threat actor
-    threat_actor = ThreatActor()
-    threat_actor.attemptLimit = max(1, int(cyrce_input.threatActorInput.determination * 10))
-
-    threat_actor.properties['capacity'] = np.sum((
-        cyrce_input.threatActorInput.determination * cyrce_input.threatActorInput.determinationWeight,
-        cyrce_input.threatActorInput.resources * cyrce_input.threatActorInput.resourcesWeight,
-        cyrce_input.threatActorInput.sophistication * cyrce_input.threatActorInput.sophisticationWeight)) / (
-                                                  cyrce_input.threatActorInput.determinationWeight +
-                                                  cyrce_input.threatActorInput.resourcesWeight +
-                                                  cyrce_input.threatActorInput.sophisticationWeight)
+    threat_actor = ThreatActor(type=cyrce_input.scenario.attackThreatType)
+    threat_actor.assign_property('sophistication', cyrce_input.threatActorInput.sophistication)
+    threat_actor.assign_property('resources', cyrce_input.threatActorInput.resources)
+    threat_actor.assign_property('determination', cyrce_input.threatActorInput.determination)
+    threat_actor.set_attempt_limit()
+    threat_actor.set_capability(cyrce_input)
 
     # Assign control values to each entity
     for a in allEntitiesList:
@@ -380,7 +376,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     """
 
     # Compute Threat Level; only used as a reporting metric
-    threatLevel = attackProbability * threat_actor.properties['capacity']  # MODEL: power = ~rate * force;  P = F * V
+    threatLevel = attackProbability * threat_actor.properties['capability']  # MODEL: power = ~rate * force;  P = F * V
 
     # Pre-allocate space
     attackDict = OrderedDict((k, {}) for k in range(numberOfMonteCarloRuns))
@@ -448,7 +444,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     MC loop begins for inherent and residual *
     ******************************************
     Each iteration is a single attack
-    A single attack may have multiple attempts, though, based on the TA attemptLimit
+    A single attack may have multiple attempts, though, based on the TA attempt_limit
     """
 
     for iteration in range(0, numberOfMonteCarloRuns):
@@ -480,7 +476,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
 
         while not done:
 
-            while tryCountI <= threat_actor.attemptLimit:  # tryCountI should always be < tryCountR
+            while tryCountI <= threat_actor.attempt_limit:  # tryCountI should always be < tryCountR
 
                 if initialAccess:
                     nextNode = from_node_to_node(from_node=attackDictElement['origin'],
@@ -506,14 +502,14 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
                     tryCountI += 1
                     tryCountR += 1
                     failedNodeList.append(nextNode)
-                    if tryCountI > threat_actor.attemptLimit:
+                    if tryCountI > threat_actor.attempt_limit:
                         logger.debug('   End of path reached (I/R), attacker giving up')
                         done = True
                         break
                     else:
                         logger.debug('   End of path reached (I), attacker trying again')
                     if doResidual:
-                        if tryCountR > threat_actor.attemptLimit:
+                        if tryCountR > threat_actor.attempt_limit:
                             logger.debug('   End of path reached (R), attacker giving up')
                             doResidual = False
                         elif doResidual:
@@ -523,7 +519,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
                         continue
 
                 # Determine if threat actor gains INITIAL ACCESS to entity
-                inherentAccess, residualAccess = determine_initial_access(threat_actor.properties['capacity'],
+                inherentAccess, residualAccess = determine_initial_access(threat_actor.properties['capability'],
                                                                           protectDetectRVInherent[iteration],
                                                                           protectDetectRVResidual[iteration],
                                                                           vulnerabilityRV[iteration],
@@ -535,13 +531,13 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
                         tryCountI += 1
                         tryCountR += 1
                         failedNodeList.append(nextNode)
-                        if tryCountI > threat_actor.attemptLimit:
+                        if tryCountI > threat_actor.attempt_limit:
                             logger.debug('   Failed (I/R), attacker giving up - too many tries')
                             done = True
                             break
                         else:
                             logger.debug('   Failed (I), trying again')
-                        if tryCountR > threat_actor.attemptLimit and doResidual:
+                        if tryCountR > threat_actor.attempt_limit and doResidual:
                             logger.debug('   Failed (R), residual attack ends - too many tries')
                             doResidual = False
                         elif doResidual:  # both False
@@ -570,11 +566,11 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
                                 '       Reached target (R)                                             ^^^')
                         break
 
-            if tryCountI > threat_actor.attemptLimit:
+            if tryCountI > threat_actor.attempt_limit:
                 done = True
 
             if nextNode is not None:
-                inherentExecution, residualExecution = determine_execution(threat_actor.properties['capacity'],
+                inherentExecution, residualExecution = determine_execution(threat_actor.properties['capability'],
                                                                            protectDetectRVInherent[iteration],
                                                                            protectDetectRVResidual[iteration],
                                                                            exploitabilityRV[iteration],
@@ -702,7 +698,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
                 attackSurface=float(attackSurface),
                 exploitability=exploitability,
                 vulnerability=vulnerability,
-                threatActorCapacity=threat_actor.properties['capacity'],
+                threatActorCapacity=threat_actor.properties['capability'],
                 threatLevel=float(np.mean(threatLevel)),
                 priorAttackProbability=float(priorAttackProbability),
                 attackProbability=float(attackProbability),
@@ -720,7 +716,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
                 attackSurface=float(attackSurface),
                 exploitability=exploitability,
                 vulnerability=vulnerability,
-                threatActorCapacity=threat_actor.properties['capacity'],
+                threatActorCapacity=threat_actor.properties['capability'],
                 threatLevel=float(np.mean(threatLevel)),
                 priorAttackProbability=float(priorAttackProbability),
                 attackProbability=float(attackProbability),

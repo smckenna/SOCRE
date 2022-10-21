@@ -88,7 +88,7 @@ if __name__ == '__main__':
     output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
     # output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
 
-    with open('../nist80053.json') as file:
-        json_data = json.load(file)
-    attack_coverage_metric = run_ttp_coverage_metric(scenario=1, ctrls_dict=json_data)
-    print(round(attack_coverage_metric, 1))
+#    with open('../nist80053.json') as file:
+#        json_data = json.load(file)
+#    attack_coverage_metric = run_ttp_coverage_metric(scenario=1, ctrls_dict=json_data)
+#    print(round(attack_coverage_metric, 1))
