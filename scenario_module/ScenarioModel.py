@@ -34,10 +34,11 @@ class Scenario:
         bbn = Bbn.from_json(self.bbn_file)
 
         # convert the BBN to a join tree
-        join_tree_ = InferenceController.apply(bbn)
+        #join_tree_ = InferenceController.apply(bbn)
+        join_tree = InferenceController.apply(bbn)
 
         # update bbn with prior
-        join_tree = InferenceController.reapply(join_tree_, {0: [self.aprioriProbability, 1 - self.aprioriProbability]})
+        #join_tree = InferenceController.reapply(join_tree_, {0: [self.aprioriProbability, 1 - self.aprioriProbability]})
 
         # insert evidence
         if (self.attackGeography is not None) and (self.attackGeography != "global"):
@@ -81,7 +82,7 @@ class Scenario:
                 .with_evidence(self.orgSize, 1.0) \
                 .build()
             join_tree.set_observation(ev6)
-
+        #
         # ev7 = EvidenceBuilder() \
         #     .with_node(join_tree.get_bbn_node_by_name('incident')) \
         #     .with_evidence('T', 1.0) \
@@ -106,11 +107,15 @@ class Scenario:
                     potentialOut = potential.entries[1].value
 
         self.posteriorProbability = potentialOut
-        print(round(100 * self.posteriorProbability, 1))
+        print(potentialOut)
+        #print(round(100 * self.posteriorProbability, 1))
+        scale_factor = ((potentialOut - 0.5) / 0.5 + 1) / 2
+        #print(scale_factor)
+        print(round(scale_factor, 2))
 
 
 if __name__ == '__main__':
-    bbn_file = os.path.join(os.path.dirname(__file__), './scenario_bbn.json')
+    bbn_file = os.path.join(os.path.dirname(__file__), './scenario_bbn_dbir.json')
 
     # scenario = Scenario(bbn_file, attackLossType='c', orgSize='small', attackAction='hacking', attackGeography='apac',
     #                    attackThreatType='external', aprioriProbability=0.5)
@@ -120,8 +125,11 @@ if __name__ == '__main__':
     scenario = Scenario(bbn_file, attackThreatType='internal', attackAction='misuse', aprioriProbability=0.05)
     scenario = Scenario(bbn_file, attackIndustry='information', orgSize='large', attackThreatType='threatactor',
                         attackAction='malware', attackGeography='na',
-                        attackLossType='c', aprioriProbability=0.05)
-    #    scenario = Scenario(bbn_file, aprioriProbability=0)
-    scenario.determine_scenario_probability(verbose=False)
+                        attackLossType='c', aprioriProbability=0.5)
+    scenario = Scenario(bbn_file, attackIndustry='finance', orgSize='large',
+                        attackGeography='na',
+                        aprioriProbability=0.5)
+    #scenario = Scenario(bbn_file, aprioriProbability=0.5)
+    scenario.determine_scenario_probability(verbose=True)
 
     #print(round(100 * scenario.posteriorProbability, 1))

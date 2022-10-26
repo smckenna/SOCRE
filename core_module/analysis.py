@@ -5,10 +5,16 @@ Routines that supports CyRCE and does other analysis
 import logging
 from copy import deepcopy
 import json
+
+import pandas as pd
+
 from helpers.helper_functions import fetch_excel_data
 import mitreattack.attackToExcel.attackToExcel as attackToExcel
 import mitreattack.attackToExcel.stixToDf as stixToDf
 import numpy as np
+import requests
+import urllib3
+import json
 
 def update_nist_json(ctrls_dict):
     """
@@ -34,27 +40,50 @@ def update_nist_json(ctrls_dict):
     return 1
 
 
-def fetch_mitre_nist(version=10):
+def fetch_mitre_nist(version=10, local=True):
     logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger('Main')
-    if version == 9:
-        url = "https://github.com/center-for-threat-informed-defense/attack-control-framework-mappings/raw/master/frameworks/ATT%26CK-v9.0/nist800-53-r5/nist800-53-r5-mappings.xlsx"
-    elif version == 10:
-        url = "https://github.com/center-for-threat-informed-defense/attack-control-framework-mappings/raw/main/frameworks/attack_10_1/nist800_53_r5/nist800-53-r5-mappings.xlsx"
-    else:
-        url = "https://github.com/center-for-threat-informed-defense/attack-control-framework-mappings/raw/main/frameworks/attack_10_1/nist800_53_r5/nist800-53-r5-mappings.xlsx"
+    if local:
+        if version == 9:
+            local_filename = 'nist800-53-r5-mappings_v9.csv'
+        else:
+            local_filename = 'nist800-53-r5-mappings_v10.csv'
 
-    sheet_name = 'Sheet1'
-    mappings = fetch_excel_data(url, sheet_name, skip_rows=0, data_type=str)
-    logger.debug('Pulled NIST 800-53 to MITRE mappings from ' + url)
-    ttp_to_controls = {}
-    for row in mappings.iterrows():
-        ttp_to_controls[row[1]['Technique ID']] = row[1]['Control ID']
+        ttp_to_controls = pd.read_csv(local_filename)
+        logger.debug('Read NIST 800-53 to MITRE mappings from ' + local_filename)
+
+    else:
+        sheet_name = 'Sheet1'
+        #mappings = fetch_excel_data(url, sheet_name, skip_rows=0, data_type=str)
+        #logger.debug('Pulled NIST 800-53 to MITRE mappings from ' + url)
+        #ttp_to_controls = {}
+        #for row in mappings.iterrows():
+        #    ttp_to_controls[row[1]['Technique ID']] = row[1]['Control ID']
+#    response = requests.get("https://github.com/center-for-threat-informed-defense/attack-control-framework-mappings/tree/main/frameworks/attack_10_1/nist800_53_r5/stix/nist800-53-r5-mappings.json")
+#    if response and response.status_code == 200:
+        #opener = urllib3.build_opener()
+        #f = opener.open(response)
+        #x = json.loads(f.read())
+
+#        binary_content = base64.b64decode(response.json()["content"])
+#        content = binary_content.decode("utf-8")
+#        json = json.loads(content)
+#        print(json)
+
+#    else:
+#        print(response)
+    # if version == 9:
+    #     url = "https://github.com/center-for-threat-informed-defense/attack-control-framework-mappings/tree/main/frameworks/attack_9_0/nist800_53_r5/nist800-53-r5-mappings.xlsx"
+    # elif version == 10:
+    #     url = "https://github.com/center-for-threat-informed-defense/attack-control-framework-mappings/blob/main/frameworks/attack_10_1/nist800_53_r5/nist800-53-r5-mappings.xlsx"
+    # else:
+    #     url = "https://github.com/center-for-threat-informed-defense/attack-control-framework-mappings/blob/main/frameworks/attack_10_1/nist800_53_r5/nist800-53-r5-mappings.xlsx"
+
     return ttp_to_controls
 
 
 def run_ttp_coverage_metric(scenario, ctrls_dict):
-    ttp_to_controls = fetch_mitre_nist(version=10)
+    ttp_to_controls = fetch_mitre_nist(version=10, local=True)
     fam_scores = {}
     for fam in ctrls_dict:
         fam_scores[fam] = 0.

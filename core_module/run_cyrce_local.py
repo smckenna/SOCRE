@@ -21,7 +21,7 @@ if __name__ == '__main__':
     attackMotivators = AttackMotivators(2.5, 2.5, 2.5, 2.5)
     attackSurface = AttackSurface(2.5, 2.5)
     exploitability = Exploitability(2.5)
-    threatActorInput = ThreatActorInput(determination='high', resources='government', sophistication='strategic')
+    threatActorInput = ThreatActorInput(determination='high', resources='organization', sophistication='advanced')
     directImpact = DirectImpact(3, 3, 2, 1)
     indirectImpact = IndirectImpact(3, 3, 2, 1)
     impact = Impact(directImpact, indirectImpact)
@@ -35,9 +35,9 @@ if __name__ == '__main__':
                            IDRA=IDRA(0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
                            IDRM=IDRM(0.8, 0.8, 0.8, 0.8),
                            IDSC=IDSC(0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
-                           value=0.24
+                           value=0.5
                            )
-    protect = CsfProtect(value=0.2,
+    protect = CsfProtect(value=0.5,
                          PRAC=PRAC(value=0.4, PRAC1=0.4, PRAC2=0.4, PRAC3=0.4, PRAC4=0.4, PRAC5=0.4, PRAC6=0.4,
                                    PRAC7=0.4),
                          PRAT=PRAT(value=0.4, PRAT1=0.4, PRAT2=0.4, PRAT3=0.4, PRAT4=0.4, PRAT5=0.4),
@@ -49,7 +49,7 @@ if __name__ == '__main__':
                          PRMA=PRMA(value=0.4, PRMA1=0.4, PRMA2=0.4),
                          PRPT=PRPT(value=0.4, PRPT1=0.4, PRPT2=0.4, PRPT3=0.4, PRPT4=0.4, PRPT5=0.4)
                          )
-    detect = CsfDetect(value=0.2,
+    detect = CsfDetect(value=0.5,
                        DEAE=DEAE(value=0.4, DEAE1=0.4, DEAE2=0.4, DEAE3=0.4, DEAE4=0.4, DEAE5=0.4),
                        DECM=DECM(value=0.4, DECM1=0.4, DECM2=0.4, DECM3=0.4, DECM4=0.4, DECM5=0.4, DECM6=0.4, DECM7=0.4,
                                  DECM8=0.4),
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     #output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
     #output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
 
-    with open('../sp80053.json') as file:
-        json_data = json.load(file)
-    attack_coverage_metric = run_ttp_coverage_metric(scenario=1, ctrls_dict=json_data)
-    print(round(attack_coverage_metric, 1))
+   # with open('../sp80053.json') as file:
+    #    json_data = json.load(file)
+    #attack_coverage_metric = run_ttp_coverage_metric(scenario=1, ctrls_dict=json_data)
+    #print(round(attack_coverage_metric, 1))
