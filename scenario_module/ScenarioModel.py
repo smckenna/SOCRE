@@ -9,12 +9,11 @@ class Scenario:
 
     def __init__(self, bbn_file, attackGeography=None, attackAction=None, attackThreatType=None,
                  attackLossType=None, orgSize=None, attackIndustry=None, attackTarget=None,
-                 aprioriProbability=0.05, label="Scenario"):
+                 label="Scenario"):
         self.label = label
         self.uuid = uuid4()
         self.bbn_file = bbn_file
-        self.aprioriProbability = aprioriProbability
-        self.posteriorProbability = aprioriProbability
+        self.probability_scale_factor = 0.5
         self.attackGeography = attackGeography
         self.attackAction = attackAction
         self.attackLossType = attackLossType
@@ -25,20 +24,16 @@ class Scenario:
         self.veris_threat_actions = []
         self.ttps = []
 
-    def determine_scenario_probability(self, verbose=False):
+    def determine_scenario_probability_scale_factor(self, verbose=False):
         """
-        Function that returns probability of attack using DBIR data in a BBN
+        Function that returns a scale factor for the relative probability of  attack using DBIR data in a BBN
         :param verbose: Boolean to print result to terminal
         """
 
         bbn = Bbn.from_json(self.bbn_file)
 
         # convert the BBN to a join tree
-        #join_tree_ = InferenceController.apply(bbn)
         join_tree = InferenceController.apply(bbn)
-
-        # update bbn with prior
-        #join_tree = InferenceController.reapply(join_tree_, {0: [self.aprioriProbability, 1 - self.aprioriProbability]})
 
         # insert evidence
         if (self.attackGeography is not None) and (self.attackGeography != "global"):
@@ -82,7 +77,8 @@ class Scenario:
                 .with_evidence(self.orgSize, 1.0) \
                 .build()
             join_tree.set_observation(ev6)
-        #
+
+        # Only used for development
         # ev7 = EvidenceBuilder() \
         #     .with_node(join_tree.get_bbn_node_by_name('incident')) \
         #     .with_evidence('T', 1.0) \
@@ -106,12 +102,9 @@ class Scenario:
                 else:
                     potentialOut = potential.entries[1].value
 
-        self.posteriorProbability = potentialOut
-        print(potentialOut)
-        #print(round(100 * self.posteriorProbability, 1))
-        scale_factor = ((potentialOut - 0.5) / 0.5 + 1) / 2
-        #print(scale_factor)
-        print(round(scale_factor, 2))
+        if verbose:
+            print("potentialOut = " + str(round(potentialOut, 2)))
+        self.probability_scale_factor = potentialOut
 
 
 if __name__ == '__main__':
@@ -121,15 +114,14 @@ if __name__ == '__main__':
     #                    attackThreatType='external', aprioriProbability=0.5)
     # scenario = Scenario(bbn_file, attackAction='hacking', attackGeography='na', attackIndustry='professional', aprioriProbability=0.5)
     scenario = Scenario(bbn_file, attackLossType='a', orgSize='small', attackAction='social', attackGeography='na',
-                        attackIndustry='professional', aprioriProbability=0.05)
-    scenario = Scenario(bbn_file, attackThreatType='internal', attackAction='misuse', aprioriProbability=0.05)
+                        attackIndustry='professional')
+    scenario = Scenario(bbn_file, attackThreatType='internal', attackAction='misuse')
     scenario = Scenario(bbn_file, attackIndustry='information', orgSize='large', attackThreatType='threatactor',
                         attackAction='malware', attackGeography='na',
-                        attackLossType='c', aprioriProbability=0.5)
+                        attackLossType='c')
     scenario = Scenario(bbn_file, attackIndustry='finance', orgSize='large',
-                        attackGeography='na',
-                        aprioriProbability=0.5)
-    #scenario = Scenario(bbn_file, aprioriProbability=0.5)
-    scenario.determine_scenario_probability(verbose=True)
+                        attackGeography='na')
+    #scenario = Scenario(bbn_file)
+    scenario.determine_scenario_probability_scale_factor(verbose=True)
 
-    #print(round(100 * scenario.posteriorProbability, 1))
+    print(round(scenario.probability_scale_factor, 2))
