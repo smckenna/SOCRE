@@ -323,7 +323,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
 
     # Use this metadata to set scale factor on likelihood of attack
     attackAction = cyrce_input.scenario.attackAction
-    attackTarget = cyrce_input.scenario.attackTarget  # also, threat actor objective here
+    attackTarget = [a for a in allEntitiesList if a.label.lower() == cyrce_input.scenario.attackTarget][0]
     attackIndustry = cyrce_input.scenario.attackIndustry
     attackGeography = cyrce_input.scenario.attackGeography
     attackLossType = cyrce_input.scenario.attackLossType
@@ -423,7 +423,12 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     Each iteration is a single attack
     A single attack may have multiple attempts, though, based on the TA attempt_limit
     """
-    payload = {}
+    payload = {'target': attackTarget, 'probability_scale_factor': probability_scale_factor, 'attackDict': attackDict,
+               'threat_actor': threat_actor, 'graph': graph, 'allEntitiesList': allEntitiesList,
+               'protectDetectRVInherent': protectDetectRVInherent, 'protectDetectRVResidual': protectDetectRVResidual,
+               'vulnerabilityRV': vulnerabilityRV, 'initial_accessRV': initial_accessRV,
+               'exploitabilityRV': exploitabilityRV, 'execution_accessRV': execution_accessRV,
+               'respondRVInherent': respondRVInherent, 'respondRecoverRVResidual': respondRecoverRVResidual, 'inputs': INPUTS}
 
     for iteration in range(0, numberOfMonteCarloRuns):
 
