@@ -423,6 +423,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     Each iteration is a single attack
     A single attack may have multiple attempts, though, based on the TA attempt_limit
     """
+    payload = {}
 
     for iteration in range(0, numberOfMonteCarloRuns):
 
