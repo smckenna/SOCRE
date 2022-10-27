@@ -319,10 +319,9 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
             a.controls['80053']['AT'] = cyrce_input.sp80053.AT
             a.controls['80053']['RA'] = cyrce_input.sp80053.RA
 
-
         a.allocate_data_space(['impactI', 'impactR', 'accessI', 'accessR', 'riskI', 'riskR'], numberOfMonteCarloRuns)
 
-    # Use this metadata to set prior probability of attack
+    # Use this metadata to set scale factor on likelihood of attack
     attackAction = cyrce_input.scenario.attackAction
     attackTarget = cyrce_input.scenario.attackTarget  # also, threat actor objective here
     attackIndustry = cyrce_input.scenario.attackIndustry
@@ -333,29 +332,26 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
 
     scenario = ScenarioModel.Scenario(attackAction=attackAction, attackThreatType=attackThreatType,
                                       attackGeography=attackGeography, attackLossType=attackLossType,
-                                      attackIndustry=attackIndustry, orgSize=orgSize,
-                                      aprioriProbability=INPUTS['baselineProbability'], bbn_file=bbn_file)
-    scenario.determine_scenario_probability(verbose=False)
+                                      attackIndustry=attackIndustry, orgSize=orgSize, bbn_file=bbn_file)
+    scenario.determine_scenario_probability_scale_factor(verbose=False)
 
     # TODO make these entries optional, if that is deemed a good idea, then update them as below if there is info to
-    # use for the update, o/w use baseline
+    # TODO use for the update, o/w use baseline
     # Compute Attack Motivator metric
     attackMotivator = np.mean([cyrce_input.attackMotivators.reward,  # TODO weights?
                                cyrce_input.attackMotivators.appeal,
                                cyrce_input.attackMotivators.targeting,
                                cyrce_input.attackMotivators.perceivedDefenses])
 
+    probability_scale_factor0 = scenario.probability_scale_factor
     # Handle type of analysis
     if 'cert' in riskMode:
-        attackProbability = 1.
-        priorAttackProbability = 1.
+        scenario.probability_scale_factor = 1.
     elif 'prob' in riskMode:
-        # Update the initial estimate of attack probability using the Attack Motivator metric
-        attackProbability, priorAttackProbability = update_attack_probability_given_probability(
-            scenario.posteriorProbability, timeWindow, attackMotivator)
-    else:
-        attackProbability = 0.5
-        priorAttackProbability = 0.5
+        # Update the initial starting value of the scenario_probability_scale_factor using the Attack Motivator metric
+        scenario.probability_scale_factor = scenario.probability_scale_factor * attackMotivator
+
+    probability_scale_factor = scenario.probability_scale_factor
 
     """
     Bayes to incorporate log data (a la ARM) (not in VISTA, but noted here for future)
@@ -363,16 +359,10 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     """
 
     # Compute Threat Level; only used as a reporting metric
-    threatLevel = attackProbability * threat_actor.properties['capability']  # MODEL: power = ~rate * force;  P = F * V
+    threatLevel = probability_scale_factor * threat_actor.properties['capability']  # MODEL: power = ~rate * force;  P = F * V
 
     # Pre-allocate space
     attackDict = OrderedDict((k, {}) for k in range(numberOfMonteCarloRuns))
-    # riskI = np.zeros((numberOfMonteCarloRuns,))
-    # riskR = np.zeros((numberOfMonteCarloRuns,))
-    # impactI = np.zeros((numberOfMonteCarloRuns,))
-    # impactR = np.zeros((numberOfMonteCarloRuns,))
-    # accessI = np.zeros((numberOfMonteCarloRuns,))
-    # accessR = np.zeros((numberOfMonteCarloRuns,))
 
     # TODO using this idea, but not sold on it
     # Using baseline Attack Surface metric, update it with attack surface values from inputs
@@ -451,7 +441,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
 
         attackDict[iteration]['iteration'] = iteration
         attackDict[iteration]['attack_type'] = 'nominal'
-        attackDict[iteration]['attack_prob'] = attackProbability
+        attackDict[iteration]['probability_scale_factor'] = probability_scale_factor
         attackDict[iteration]['origin'] = origin
         attackDict[iteration]['destination'] = destination
         attackDict[iteration]['entryPoint'] = entryNode
@@ -582,8 +572,8 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
                                                                       respondRecoverRVResidual[iteration], nextNode)
                     logger.debug(' Inherent Impact: ' + str(round(residualImpact, 2)))
                     residualImpact = 0.
-                nextNode.manifest['riskR'][iteration] = attackProbability * residualImpact
-                nextNode.manifest['riskI'][iteration] = attackProbability * inherentImpact
+                nextNode.manifest['riskR'][iteration] = probability_scale_factor * residualImpact
+                nextNode.manifest['riskI'][iteration] = probability_scale_factor * inherentImpact
                 nextNode.manifest['impactR'][iteration] = residualImpact
                 nextNode.manifest['impactI'][iteration] = inherentImpact
                 nextNode.manifest['accessR'][iteration] = residualAccess
@@ -591,8 +581,8 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
 
     # Collect MCS results to calculate the outputs we want (for the single enterprise node)
     for a in allEntitiesList:
-        a.lhR_vec = attackProbability * a.manifest['accessR']
-        a.lhI_vec = attackProbability * a.manifest['accessI']
+        a.lhR_vec = probability_scale_factor * a.manifest['accessR']
+        a.lhI_vec = probability_scale_factor * a.manifest['accessI']
         a.impR_vec = a.manifest['impactR']
         a.impI_vec = a.manifest['impactI']
         a.riskI_vec = np.multiply(a.lhI_vec, a.impI_vec)
@@ -687,8 +677,8 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
                 vulnerability=vulnerability,
                 threatActorCapacity=threat_actor.properties['capability'],
                 threatLevel=float(np.mean(threatLevel)),
-                priorAttackProbability=float(priorAttackProbability),
-                attackProbability=float(attackProbability),
+                probability_scale_factor0=float(probability_scale_factor0),
+                probability_scale_factor=float(probability_scale_factor),
                 attackMotivators=float(attackMotivator),
                 directImpact=float(directImpactValue),
                 indirectImpact=float(indirectImpactValue))))
@@ -705,8 +695,8 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
                 vulnerability=vulnerability,
                 threatActorCapacity=threat_actor.properties['capability'],
                 threatLevel=float(np.mean(threatLevel)),
-                priorAttackProbability=float(priorAttackProbability),
-                attackProbability=float(attackProbability),
+                probability_scale_factor0=float(probability_scale_factor0),
+                probability_scale_factor=float(probability_scale_factor),
                 attackMotivators=float(attackMotivator),
                 directImpact=float(directImpactValue),
                 indirectImpact=float(indirectImpactValue)

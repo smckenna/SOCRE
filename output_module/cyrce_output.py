@@ -32,8 +32,8 @@ class CyrceOutput:
                  threatActorCapacity: float,
                  threatLevel: float,
                  attackMotivators: float,
-                 priorAttackProbability: float,
-                 attackProbability: float,
+                 probability_scale_factor0: float,
+                 probability_scale_factor: float,
                  exploitability: float,
                  vulnerability: float,
                  directImpact: float,
@@ -42,8 +42,8 @@ class CyrceOutput:
         self.indirectImpact = indirectImpact
         self.directImpact = directImpact
         self.attackMotivators = attackMotivators
-        self.priorAttackProbability = priorAttackProbability
-        self.attackProbability = attackProbability
+        self.probability_scale_factor0 = probability_scale_factor0
+        self.probability_scale_factor = probability_scale_factor
         self.threatActorCapacity = threatActorCapacity
         self.threatLevel = threatLevel
         self.attackSurface = attackSurface
@@ -66,8 +66,8 @@ class CyrceOutput:
                     attackSurface=self.attackSurface,
                     threatActorCapacity=self.threatActorCapacity,
                     threatLevel=self.threatLevel,
-                    priorAttackProbability=self.priorAttackProbability,
-                    attackProbability=self.attackProbability,
+                    probability_scale_factor0=self.probability_scale_factor0,
+                    probability_scale_factor=self.probability_scale_factor,
                     attackMotivators=self.attackMotivators,
                     exploitability=self.exploitability,
                     vulnerability=self.vulnerability,

@@ -16,7 +16,7 @@ from scenario_module.ScenarioModel import Scenario
 if __name__ == '__main__':
     graph = nx.read_graphml(
         os.path.join(os.path.dirname(__file__), '../model_resources/enterprise_network_model.graphml'))
-    bbn_file = os.path.join(os.path.dirname(__file__), '../scenario_module/scenario_bbn.json')
+    bbn_file = os.path.join(os.path.dirname(__file__), '../scenario_module/scenario_bbn_dbir.json')
 
     attackMotivators = AttackMotivators(2.5, 2.5, 2.5, 2.5)
     attackSurface = AttackSurface(2.5, 2.5)
