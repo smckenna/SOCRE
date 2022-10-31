@@ -16,6 +16,7 @@ import requests
 import urllib3
 import json
 
+
 def update_nist_json(ctrls_dict):
     """
     Writes out a simpler json of the 800-54 controls; used during dev
@@ -41,8 +42,8 @@ def update_nist_json(ctrls_dict):
 
 
 def fetch_mitre_nist(version=10, local=True):
-    logging.basicConfig(level=logging.DEBUG)
-    logger = logging.getLogger('Main')
+    # logging.basicConfig(level=logging.DEBUG)
+    # logger = logging.getLogger('Main')
     if local:
         if version == 9:
             local_filename = 'nist800-53-r5-mappings_v9.csv'
@@ -50,28 +51,28 @@ def fetch_mitre_nist(version=10, local=True):
             local_filename = 'nist800-53-r5-mappings_v10.csv'
 
         ttp_to_controls = pd.read_csv(local_filename)
-        logger.debug('Read NIST 800-53 to MITRE mappings from ' + local_filename)
+        # logger.debug('Read NIST 800-53 to MITRE mappings from ' + local_filename)
 
     else:
         sheet_name = 'Sheet1'
-        #mappings = fetch_excel_data(url, sheet_name, skip_rows=0, data_type=str)
-        #logger.debug('Pulled NIST 800-53 to MITRE mappings from ' + url)
-        #ttp_to_controls = {}
-        #for row in mappings.iterrows():
+        # mappings = fetch_excel_data(url, sheet_name, skip_rows=0, data_type=str)
+        # logger.debug('Pulled NIST 800-53 to MITRE mappings from ' + url)
+        # ttp_to_controls = {}
+        # for row in mappings.iterrows():
         #    ttp_to_controls[row[1]['Technique ID']] = row[1]['Control ID']
-#    response = requests.get("https://github.com/center-for-threat-informed-defense/attack-control-framework-mappings/tree/main/frameworks/attack_10_1/nist800_53_r5/stix/nist800-53-r5-mappings.json")
-#    if response and response.status_code == 200:
-        #opener = urllib3.build_opener()
-        #f = opener.open(response)
-        #x = json.loads(f.read())
+    #    response = requests.get("https://github.com/center-for-threat-informed-defense/attack-control-framework-mappings/tree/main/frameworks/attack_10_1/nist800_53_r5/stix/nist800-53-r5-mappings.json")
+    #    if response and response.status_code == 200:
+    # opener = urllib3.build_opener()
+    # f = opener.open(response)
+    # x = json.loads(f.read())
 
-#        binary_content = base64.b64decode(response.json()["content"])
-#        content = binary_content.decode("utf-8")
-#        json = json.loads(content)
-#        print(json)
+    #        binary_content = base64.b64decode(response.json()["content"])
+    #        content = binary_content.decode("utf-8")
+    #        json = json.loads(content)
+    #        print(json)
 
-#    else:
-#        print(response)
+    #    else:
+    #        print(response)
     # if version == 9:
     #     url = "https://github.com/center-for-threat-informed-defense/attack-control-framework-mappings/tree/main/frameworks/attack_9_0/nist800_53_r5/nist800-53-r5-mappings.xlsx"
     # elif version == 10:
@@ -121,16 +122,17 @@ def mit():
     # Show citation data for LOLBAS Wmic reference
     citations_df = techniques_data["citations"]
     print(citations_df[citations_df["reference"].str.contains("LOLBAS Wmic")])
-    #tactic_lbls = np.unique(techniques_df.tactics)
-    #app_tactic_list = []
-    #for t in tactic_lbls:
+    # tactic_lbls = np.unique(techniques_df.tactics)
+    # app_tactic_list = []
+    # for t in tactic_lbls:
     #    tacs_ = tactic_lbls[1].split(',')
     #    for tc in tacs_:
     #        app_tactic_list.append(tc.strip())
     # LAYERS OF CONTROLS
     tactic_list = tactics_data['tactics'].name.tolist()
     phase_dict = {key: {'ttps': [], 'sp80053': []} for key in tactic_list}
-    b=1
+    b = 1
+
 
 if __name__ == '__main__':
     mit()

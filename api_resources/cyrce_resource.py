@@ -13,8 +13,8 @@ from input_module.cyrce_input import CyrceInput, CyrceTtpCoverageInput, \
 from core_module.model_main import run_cyrce
 from core_module.analysis import run_ttp_coverage_metric
 
-graph = nx.read_graphml(os.path.join(os.path.dirname(__file__), '../model_resources/enterprise_network_model.graphml'))
-bbn_file = os.path.join(os.path.dirname(__file__), '../scenario_module/scenario_bbn.json')
+#graph = nx.read_graphml(os.path.join(os.path.dirname(__file__), '../model_resources/enterprise_network_model.graphml'))
+#bbn_file = os.path.join(os.path.dirname(__file__), '../scenario_module/scenario_bbn.json')
 
 
 # class Cyrce80053Resource(Resource):

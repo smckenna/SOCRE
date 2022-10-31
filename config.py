@@ -1,5 +1,7 @@
 INPUTS = {
     'numberOfMonteCarloRuns': 1000,
+    'graph_model_file': '../model_resources/enterprise_network_model.graphml',
+    'bbn_file': '../scenario_module/scenario_bbn_dbir.json',
     'impactCalcMode': 'mean',  # mean or max
     'riskMode': 'probabilistic',  # certainty or probabilistic
     'timeWindow': 1,  # 1 year

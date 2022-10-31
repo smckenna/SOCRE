@@ -1,11 +1,12 @@
-'''
-title
-'''
+"""
+Cyber Risk Computational Engine - CyCRE
+"""
 
 import logging
 from scipy import interpolate
 from scipy.stats import poisson
-
+import networkx as nx
+import os
 from output_module.cyrce_output import CyrceOutput, ValueVar
 from config import INPUTS
 from entity_module.Entity import Organization
@@ -56,6 +57,7 @@ def generate_uniform_random_variables(nIterations=1000):
 
 def determine_initial_access(tac, proti, protr, vuln, iaRV, coeffs):  # TODO these could be done "once" outside loop
     """
+    Determine initial access success or failure
     :param tac: threat actor capacity
     :param proti: CSF Protect Function metric, inherent
     :param protr: CSF Protect Function metric, residual
@@ -107,6 +109,7 @@ def determine_initial_access(tac, proti, protr, vuln, iaRV, coeffs):  # TODO the
 
 def determine_execution(tac, proti, protr, exploitability, iaRV, coeffs):
     """
+    Determine execution success or failure
     :param tac: threat actor capacity
     :param proti: CSF Protect Function metric, inherent
     :param protr: CSF Protect Function metric, residual
@@ -163,6 +166,7 @@ def determine_movement():
 
 def determine_impact(rri, rrr, entity):
     """
+    Determine impact success or failure
     I = (1 - RR) * VAL
     :param rri: CSF Respond & Recover Function metric, inherent
     :param rrr:  CSF Respond & Recover Function metric, residual
@@ -260,34 +264,31 @@ def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
     return x11, p11
 
 
-# temp code to test this
-def run_cyrce_ttp_coverage(in_val):
-    print(in_val)
-    print("Running run_cyrce_ttp_coverage")
-
-
-def run_cyrce(mode, cyrce_input, graph, bbn_file):
+def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     """
     Main routine to run the Booz Allen Cyber Risk Engine
     :param mode: controls mode, 'csf' or '80053'
-    :param cyrce_input_: input object
-    :param graph: network model as a graph
-    :param bbn_file: pybbn bbn as json
+    :param cyrce_input: input object
+    :param graph_model_file: network model file
+    :param bbn_file: pybbn bbn file
     :return: outputs
     """
 
     # used for testing, etc.
     if platform.uname()[1] == 'BAHG3479J3':
         np.random.seed(101798)
+        logger = logging.getLogger('Main')
+        logger.setLevel(level=logging.DEBUG)
+    else:
+        logger = logging.getLogger('Main')
+        logger.setLevel(level=logging.INFO)
+
+    graph = nx.read_graphml(os.path.join(os.path.dirname(__file__), graph_model_file))
 
     numberOfMonteCarloRuns = INPUTS['numberOfMonteCarloRuns']
     impactCalcMode = INPUTS['impactCalcMode']
-    timeWindow = INPUTS['timeWindow']
     riskMode = INPUTS['riskMode']
     coeffs = INPUTS['tac_v_ctrl_coeffs']
-
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger('Main')
 
     # Compute total impact from direct and indirect
     impactValue, directImpactValue, indirectImpactValue = compute_impact_values(cyrce_input, impactCalcMode)
@@ -344,6 +345,7 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
                                cyrce_input.attackMotivators.perceivedDefenses])
 
     probability_scale_factor0 = scenario.probability_scale_factor
+
     # Handle type of analysis
     if 'cert' in riskMode:
         scenario.probability_scale_factor = 1.
@@ -354,12 +356,13 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     probability_scale_factor = scenario.probability_scale_factor
 
     """
-    Bayes to incorporate log data (a la ARM) (not in VISTA, but noted here for future)
+    Bayes to incorporate log data (a la ARM) (not in this version, but noted here for future)
     attackProbabilityBayes = probLogDataGivenAttack * probAttack / probLogData
     """
 
     # Compute Threat Level; only used as a reporting metric
-    threatLevel = probability_scale_factor * threat_actor.properties['capability']  # MODEL: power = ~rate * force;  P = F * V
+    threatLevel = probability_scale_factor * threat_actor.properties[
+        'capability']  # MODEL: power = ~rate * force;  P = F * V
 
     # Pre-allocate space
     attackDict = OrderedDict((k, {}) for k in range(numberOfMonteCarloRuns))
@@ -423,19 +426,13 @@ def run_cyrce(mode, cyrce_input, graph, bbn_file):
     Each iteration is a single attack
     A single attack may have multiple attempts, though, based on the TA attempt_limit
     """
-    payload = {'target': attackTarget, 'probability_scale_factor': probability_scale_factor, 'attackDict': attackDict,
-               'threat_actor': threat_actor, 'graph': graph, 'allEntitiesList': allEntitiesList,
-               'protectDetectRVInherent': protectDetectRVInherent, 'protectDetectRVResidual': protectDetectRVResidual,
-               'vulnerabilityRV': vulnerabilityRV, 'initial_accessRV': initial_accessRV,
-               'exploitabilityRV': exploitabilityRV, 'execution_accessRV': execution_accessRV,
-               'respondRVInherent': respondRVInherent, 'respondRecoverRVResidual': respondRecoverRVResidual, 'inputs': INPUTS}
 
     for iteration in range(0, numberOfMonteCarloRuns):
 
         tryCountI, tryCountR = 1, 1
         origin = 'internet'
-        destination = enterprise.network_label  # attack target
-        entryNode = enterprise.network_label  # first node to gain entry
+        destination = attackTarget.network_label  # attack target
+        entryNode = attackTarget.network_label  # first node to gain entry
 
         initialAccess = True
         currentNode = None

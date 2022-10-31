@@ -1,7 +1,4 @@
 import json
-
-import networkx as nx
-import os
 from input_module.cyrce_input import CyrceInput, \
     AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, DirectImpact, Impact, IndirectImpact, \
     CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, \
@@ -12,11 +9,14 @@ from api_resources.cyrce_resource import CyrceResource
 from core_module.model_main import run_cyrce
 from core_module.analysis import run_ttp_coverage_metric
 from scenario_module.ScenarioModel import Scenario
+from config import INPUTS
 
 if __name__ == '__main__':
-    graph = nx.read_graphml(
-        os.path.join(os.path.dirname(__file__), '../model_resources/enterprise_network_model.graphml'))
-    bbn_file = os.path.join(os.path.dirname(__file__), '../scenario_module/scenario_bbn_dbir.json')
+    #graph = nx.read_graphml(
+    #    os.path.join(os.path.dirname(__file__), '../model_resources/enterprise_network_model.graphml'))
+    #bbn_file = os.path.join(os.path.dirname(__file__), '../scenario_module/scenario_bbn_dbir.json')
+    graph_model_file = INPUTS['graph_model_file']
+    bbn_file = INPUTS['bbn_file']
 
     attackMotivators = AttackMotivators(2.5, 2.5, 2.5, 2.5)
     attackSurface = AttackSurface(2.5, 2.5)
@@ -92,8 +92,8 @@ if __name__ == '__main__':
                              impact=impact,
                              csf=csf, sp80053=sp80053,
                              scenario=scenario)
-    output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph=graph, bbn_file=bbn_file)
-    #output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='80053', graph=graph, bbn_file=bbn_file)
+    output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph_model_file=graph_model_file, bbn_file=bbn_file)
+    #output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='80053', graph_model_file=graph_model_file, bbn_file=bbn_file)
 
     # mimic api
     with open('../request.json') as file:
@@ -101,8 +101,8 @@ if __name__ == '__main__':
 
     cy_res = CyrceResource()
 
-    #output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
-    #output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph, bbn_file).reprJSON()
+    output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph_model_file, bbn_file).reprJSON()
+    #output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph_model_file, bbn_file).reprJSON()
 
    # with open('../sp80053.json') as file:
     #    json_data = json.load(file)
