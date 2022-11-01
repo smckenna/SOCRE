@@ -274,7 +274,7 @@ class Entity(object):
                     }
                 }
             }
-        }, '80053': {
+        }, 'sp80053': {
             "AC": {
                 "AC-1": 0.0952559621518162,
                 "AC-2": 0.34234270463886973,
@@ -501,11 +501,6 @@ class Entity(object):
             }
         }}
 
-    # def allocate_data_space(self, size):
-    #    self.impactI = np.zeros((size,))
-    #    self.impactR = np.zeros((size,))
-    #    self.accessI = np.zeros((size,))
-    #    self.accessR = np.zeros((size,))
 
     def allocate_data_space(self, keys, size):
         for k in keys:

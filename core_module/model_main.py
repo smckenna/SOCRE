@@ -55,19 +55,19 @@ def generate_uniform_random_variables(nIterations=1000):
     return uniform.rvs(loc=0, scale=1, size=nIterations)
 
 
-def determine_initial_access(tac, proti, protr, vuln, iaRV, coeffs):  # TODO these could be done "once" outside loop
+def determine_initial_access(tac, ia_control_inherent, ia_control_residual, vuln, ia_RV, coeffs):  # TODO these could be done "once" outside loop
     """
-    Determine initial access success or failure
-    :param tac: threat actor capacity
-    :param proti: CSF Protect Function metric, inherent
-    :param protr: CSF Protect Function metric, residual
+    Determine "initial access" (ATT&CK Recon, Resource Dev, Initial Access) success or failure
+    :param tac: threat actor capability
+    :param ia_control_inherent: control against Initial Access TTPs, inherent
+    :param ia_control_residual: control against Initial Access TTPs, residual
     :param vuln: vulnerability metric
     :param iaRV: Initial Access random variable
-    :param coeffs: Threat Actor Capacity versus Control Effectiveness fit coefficients
+    :param coeffs: threat actor capability versus Control Effectiveness fit coefficients
     :return: A pair of booleans (inherent, residual), with True for success, False for fail
     """
-    inherent_vuln = vuln * (1 - proti)
-    residual_vuln = vuln * (1 - protr)
+    inherent_vuln = vuln * (1 - ia_control_inherent)
+    residual_vuln = vuln * (1 - ia_control_residual)
     p00 = coeffs[0]
     p10 = coeffs[1]
     p01 = coeffs[2]
@@ -87,7 +87,7 @@ def determine_initial_access(tac, proti, protr, vuln, iaRV, coeffs):  # TODO the
     elif prob > 1:
         prob = 1.
 
-    if iaRV <= prob:
+    if ia_RV <= prob:
         inherent_result = True
     else:
         inherent_result = False
@@ -99,7 +99,7 @@ def determine_initial_access(tac, proti, protr, vuln, iaRV, coeffs):  # TODO the
         prob = 0.
     elif prob > 1:
         prob = 1.
-    if iaRV <= prob:
+    if ia_RV <= prob:
         residual_result = True
     else:
         residual_result = False
@@ -107,19 +107,20 @@ def determine_initial_access(tac, proti, protr, vuln, iaRV, coeffs):  # TODO the
     return inherent_result, residual_result
 
 
-def determine_execution(tac, proti, protr, exploitability, iaRV, coeffs):
+def determine_execution(tac, exec_control_inherent, exec_control_resdiual, exploitability, execution_RV, coeffs):
     """
-    Determine execution success or failure
-    :param tac: threat actor capacity
-    :param proti: CSF Protect Function metric, inherent
-    :param protr: CSF Protect Function metric, residual
+    Determine "execution" (ATT&CK Execution, Persistence, Priv Escalation, Defensive Evasion, Cred Access, Discovery,
+        Collection) success or failure
+    :param tac: threat actor capability
+    :param exec_control_inherent: control against "execution" TTPs, inherent
+    :param exec_control_inherent: control against "execution" TTPs, residual
     :param exploitability: exploitability metric
-    :param iaRV: Initial Access random variable
-    :param coeffs: Threat Actor Capacity versus Control Effectiveness fit coefficients
+    :param execution_RV: Execution random variable
+    :param coeffs: threat actor capability versus Control Effectiveness fit coefficients
     :return: A pair of booleans (inherent, residual), with True for success, False for fail
     """
-    inherent_expl = exploitability * (1 - proti)
-    residual_expl = exploitability * (1 - protr)
+    inherent_expl = exploitability * (1 - exec_control_inherent)
+    residual_expl = exploitability * (1 - exec_control_resdiual)
 
     p00 = coeffs[0]
     p10 = coeffs[1]
@@ -139,7 +140,7 @@ def determine_execution(tac, proti, protr, exploitability, iaRV, coeffs):
         prob = 0.
     elif prob > 1:
         prob = 1.
-    if iaRV <= prob:
+    if execution_RV <= prob:
         inherent_result = True
     else:
         inherent_result = False
@@ -151,7 +152,7 @@ def determine_execution(tac, proti, protr, exploitability, iaRV, coeffs):
         prob = 0.
     elif prob > 1:
         prob = 1.
-    if iaRV <= prob:
+    if execution_RV <= prob:
         residual_result = True
     else:
         residual_result = False
@@ -159,22 +160,70 @@ def determine_execution(tac, proti, protr, exploitability, iaRV, coeffs):
     return inherent_result, residual_result
 
 
-def determine_movement():
-    # TBD
-    return 0
-
-
-def determine_impact(rri, rrr, entity):
+def determine_movement(tac, movement_control_inherent, movement_control_resdiual, exploitability, movement_RV, coeffs):
     """
-    Determine impact success or failure
+    Determine "movement" (ATT&CK Lateral Movement) success or failure
+    :param tac: threat actor capability
+    :param movement_control_inherent: control against "movement" TTPs, inherent
+    :param movement_control_resdiual: control against "movement" TTPs, residual
+    :param exploitability: exploitability metric
+    :param movement_RV: Movement random variable
+    :param coeffs: threat actor capability versus Control Effectiveness fit coefficients
+    :return: A pair of booleans (inherent, residual), with True for success, False for fail
+    """
+    inherent_expl = exploitability * (1 - movement_control_inherent)
+    residual_expl = exploitability * (1 - movement_control_resdiual)
+
+    p00 = coeffs[0]
+    p10 = coeffs[1]
+    p01 = coeffs[2]
+    p20 = coeffs[3]
+    p11 = coeffs[4]
+    p02 = coeffs[5]
+    p30 = coeffs[6]
+    p21 = coeffs[7]
+    p12 = coeffs[8]
+    p03 = coeffs[9]
+    x = 1 - inherent_expl
+    y = tac
+    prob = p00 + p10 * x + p01 * y + p20 * x ** 2 + p11 * x * y + p02 * y ** 2 + \
+           p30 * x ** 3 + p21 * x ** 2 * y + p12 * x * y ** 2 + p03 * y ** 3
+    if prob < 0:
+        prob = 0.
+    elif prob > 1:
+        prob = 1.
+    if movement_RV <= prob:
+        inherent_result = True
+    else:
+        inherent_result = False
+
+    x = 1 - residual_expl
+    prob = p00 + p10 * x + p01 * y + p20 * x ** 2 + p11 * x * y + p02 * y ** 2 + \
+           p30 * x ** 3 + p21 * x ** 2 * y + p12 * x * y ** 2 + p03 * y ** 3
+    if prob < 0:
+        prob = 0.
+    elif prob > 1:
+        prob = 1.
+    if movement_RV <= prob:
+        residual_result = True
+    else:
+        residual_result = False
+
+    return inherent_result, residual_result
+
+
+def determine_impact(impact_control_inherent, impact_control_residual, entity):
+    """
+    Determine "impact" (ATT&CK C&C, Exfil, Impact) success or failure
     I = (1 - RR) * VAL
-    :param rri: CSF Respond & Recover Function metric, inherent
-    :param rrr:  CSF Respond & Recover Function metric, residual
+    :param impact_control_inherent: control against "impact" TTPs, inherent
+    :param impact_control_residual: control against "impact" TTPs, residual
     :param entity: entity object
     :return: A pair of impact values (inherent, residual)
     """
-    inherentImpact = entity.value * (1 - rri)
-    residualImpact = entity.value * (1 - rrr)
+    inherentImpact = entity.value * (1 - impact_control_inherent)
+    residualImpact = entity.value * (1 - impact_control_residual)
+
     return inherentImpact, residualImpact
 
 
@@ -267,7 +316,7 @@ def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
 def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     """
     Main routine to run the Booz Allen Cyber Risk Engine
-    :param mode: controls mode, 'csf' or '80053'
+    :param mode: controls mode, 'csf' or 'sp80053'
     :param cyrce_input: input object
     :param graph_model_file: network model file
     :param bbn_file: pybbn bbn file
@@ -316,9 +365,9 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
             a.controls['csf']['detect']['value'] = cyrce_input.csf.detect.value
             a.controls['csf']['respond']['value'] = cyrce_input.csf.respond.value
             a.controls['csf']['recover']['value'] = cyrce_input.csf.recover.value
-        elif mode == '80053':
-            a.controls['80053']['AT'] = cyrce_input.sp80053.AT
-            a.controls['80053']['RA'] = cyrce_input.sp80053.RA
+        elif mode == 'sp80053':
+            a.controls['sp80053']['AT'] = cyrce_input.sp80053.AT
+            a.controls['sp80053']['RA'] = cyrce_input.sp80053.RA
 
         a.allocate_data_space(['impactI', 'impactR', 'accessI', 'accessR', 'riskI', 'riskR'], numberOfMonteCarloRuns)
 
@@ -388,8 +437,8 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                                                      nIterations=numberOfMonteCarloRuns)
     vulnerabilityRV = np.multiply(exploitabilityRV, attackSurfaceRV)
 
-    initial_accessRV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
-    execution_accessRV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
+    initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
+    execution_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
 
     detectRVInherent = np.zeros([numberOfMonteCarloRuns])
     detectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.detect.value,
@@ -434,7 +483,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
         destination = attackTarget.network_label  # attack target
         entryNode = attackTarget.network_label  # first node to gain entry
 
-        initialAccess = True
+        initial_access = True
         currentNode = None
         failedNodeList = []
         doResidual = True
@@ -458,7 +507,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
 
             while tryCountI <= threat_actor.attempt_limit:  # tryCountI should always be < tryCountR
 
-                if initialAccess:
+                if initial_access:
                     nextNode = from_node_to_node(from_node=attackDictElement['origin'],
                                                  objective_node=attackDictElement['entryPoint'],
                                                  attack_type=attackDictElement['attack_type'],
@@ -498,12 +547,12 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                             logger.debug('   End of path reached (R), residual attack ends')
                         continue
 
-                # Determine if threat actor gains INITIAL ACCESS to entity
+                # Determine if threat actor gains INITIAL ACCESS to the organization
                 inherentAccess, residualAccess = determine_initial_access(threat_actor.properties['capability'],
                                                                           protectDetectRVInherent[iteration],
                                                                           protectDetectRVResidual[iteration],
                                                                           vulnerabilityRV[iteration],
-                                                                          initial_accessRV[iteration], coeffs)
+                                                                          initial_access_RV[iteration], coeffs)
 
                 if nextNode is not None:
 
@@ -554,7 +603,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                                                                            protectDetectRVInherent[iteration],
                                                                            protectDetectRVResidual[iteration],
                                                                            exploitabilityRV[iteration],
-                                                                           execution_accessRV[iteration], coeffs)
+                                                                           execution_RV[iteration], coeffs)
 
                 logger.debug(' Execution success?. (I): ' + str(inherentExecution))
                 logger.debug(' Execution success? (R): ' + str(residualExecution))

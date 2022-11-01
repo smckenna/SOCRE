@@ -92,8 +92,8 @@ if __name__ == '__main__':
                              impact=impact,
                              csf=csf, sp80053=sp80053,
                              scenario=scenario)
-    output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph_model_file=graph_model_file, bbn_file=bbn_file)
-    #output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='80053', graph_model_file=graph_model_file, bbn_file=bbn_file)
+    #output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph_model_file=graph_model_file, bbn_file=bbn_file)
+    output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='sp80053', graph_model_file=graph_model_file, bbn_file=bbn_file)
 
     # mimic api
     with open('../request.json') as file:
