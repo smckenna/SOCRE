@@ -2,7 +2,7 @@ from uuid import uuid4
 import numpy as np
 
 
-class AllEntities:
+class AllEntities(object):
     def __init__(self):
         self.dict = {}
         self.list = []
@@ -15,10 +15,11 @@ class AllEntities:
 
 
 class Entity(object):
-
+    # TODO programmatically create entity classes?
     def __init__(self, label="", owner=None):
         self.uuid = uuid4()
         self.value = 0
+        self.type = ''
         self.label = label
         self.network_label = label.lower().replace(' ', '_')
         self.owner = owner
@@ -274,7 +275,7 @@ class Entity(object):
                     }
                 }
             }
-        }, '80053': {
+        }, 'sp80053': {
             "AC": {
                 "AC-1": 0.0952559621518162,
                 "AC-2": 0.34234270463886973,
@@ -501,12 +502,6 @@ class Entity(object):
             }
         }}
 
-    # def allocate_data_space(self, size):
-    #    self.impactI = np.zeros((size,))
-    #    self.impactR = np.zeros((size,))
-    #    self.accessI = np.zeros((size,))
-    #    self.accessR = np.zeros((size,))
-
     def allocate_data_space(self, keys, size):
         for k in keys:
             self.manifest[k] = np.zeros((size,))
@@ -516,42 +511,49 @@ class CriticalEntity(Entity):
 
     def __init__(self, label="", owner=None):
         super().__init__(label=label, owner=owner)
+        self.type = 'critical_entity'
 
 
 class Organization(Entity):
 
     def __init__(self, label="", owner=None):
         super().__init__(label=label, owner=owner)
+        self.type = 'organization'
 
 
 class Process(Entity):
 
     def __init__(self, label="", owner=None):
         super().__init__(label=label, owner=owner)
+        self.type = 'process'
 
 
 class Division(Entity):
 
     def __init__(self, label="", owner=None):
         super().__init__(label=label, owner=owner)
+        self.type = 'organization'
 
 
 class Application(Entity):
 
     def __init__(self, label="", owner=None):
         super().__init__(label=label, owner=owner)
+        self.type = 'application'
 
 
 class Product(Entity):
 
     def __init__(self, label="", owner=None):
         super().__init__(label=label, owner=owner)
+        self.type = 'product'
 
 
 class Function(Entity):
 
     def __init__(self, label="", owner=None):
         super().__init__(label=label, owner=owner)
+        self.type = 'function'
 
 
 class Asset(Entity):
@@ -560,12 +562,23 @@ class Asset(Entity):
         super().__init__(label=label, owner=owner)
         self.ip_address = ip_address
         self.os = operating_system
+        self.type = 'asset'
+        self.machine_group = None
+        self.network_group = None
 
 
 class Server(Asset):
 
     def __init__(self, label="", owner=None):
         super().__init__(label=label, owner=owner)
+        self.type = 'server'
+
+
+class CriticalServer(Asset):
+
+    def __init__(self, label="", owner=None):
+        super().__init__(label=label, owner=owner)
+        self.type = 'critical_server'
 
 
 class Laptop(Asset):
@@ -573,24 +586,28 @@ class Laptop(Asset):
     def __init__(self, label="", owner=None, operating_system="windows"):
         super().__init__(label=label, owner=owner)
         self.os = operating_system
+        self.type = 'laptop'
 
 
 class Desktop(Asset):
 
     def __init__(self, label="", owner=None):
         super().__init__(label=label, owner=owner)
+        self.type = 'desktop'
 
 
 class MobileDevice(Asset):
 
     def __init__(self, label="", owner=None):
         super().__init__(label=label, owner=owner)
+        self.type = 'mobile_device'
 
 
 class VirtualMachine(Asset):
 
     def __init__(self, label="", owner=None):
         super().__init__(label=label, owner=owner)
+        self.type = 'virtual_machine'
 
 
 class CloudObject(Entity):
@@ -598,12 +615,14 @@ class CloudObject(Entity):
     def __init__(self, label="", owner=None, provider='aws'):
         super().__init__(label=label, owner=owner)
         self.provider = provider
+        self.type = 'cloud_object'
 
 
 class CloudDataBase(CloudObject):
 
     def __init__(self, label="", owner=None):
         super().__init__(label=label, owner=owner)
+        self.type = 'cloud_database'
 
 
 class Data:
@@ -615,6 +634,7 @@ class Data:
         self.owner = owner
         self.properties = dict()
         self.data = {}
+        self.type = 'data'
 
 
 class EntityGroup:
