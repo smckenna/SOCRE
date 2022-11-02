@@ -431,18 +431,27 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                                                      random_seed=INPUTS['random_seed'])
     movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns,
                                                     random_seed=INPUTS['random_seed'])
+                                                      nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
+    attackSurfaceRV = generate_pert_random_variables(modeValue=attackSurface,
+                                                     nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
+    vulnerabilityRV = np.multiply(exploitabilityRV, attackSurfaceRV)
+
+    initial_accessRV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
+    execution_accessRV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     detectRVInherent = np.zeros([numberOfMonteCarloRuns])
     detectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.detect.value,
                                                       gamma=0.1 + 100 * cyrce_input.csf.identify.value,
                                                       nIterations=numberOfMonteCarloRuns,
                                                       random_seed=INPUTS['random_seed'])
+                                                      nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     protectRVInherent = np.zeros([numberOfMonteCarloRuns])
     protectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.protect.value,
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
                                                        nIterations=numberOfMonteCarloRuns,
                                                        random_seed=INPUTS['random_seed'])
+                                                       nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     # Compute combined Protect and Detect metric
     protectDetectRVInherent = np.zeros([numberOfMonteCarloRuns])
@@ -453,12 +462,14 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
                                                        nIterations=numberOfMonteCarloRuns,
                                                        random_seed=INPUTS['random_seed'])
+                                                       nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     recoverRVInherent = np.zeros([numberOfMonteCarloRuns])
     recoverRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.recover.value,
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
                                                        nIterations=numberOfMonteCarloRuns,
                                                        random_seed=INPUTS['random_seed'])
+                                                       nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     # Compute combined Respond and Recover metric
     respondRecoverRVInherent = np.zeros([numberOfMonteCarloRuns])
