@@ -3,6 +3,8 @@ Cyber Risk Computational Engine - CyCRE
 """
 
 import logging
+
+import pandas as pd
 from scipy import interpolate
 from scipy.stats import poisson
 import networkx as nx
@@ -12,56 +14,33 @@ from config import INPUTS
 from entity_module.Entity import *
 from threat_module.ThreatActor import ThreatActor
 from scenario_module import ScenarioModel
-# from environment_module.network_traversal import *
 from environment_module.groups import *
 from environment_module.network import *
-from helpers.helper_functions import get_confidence_interval, flatten_list
+from helpers.helper_functions import get_confidence_interval, flatten_list, generate_pert_random_variables, generate_uniform_random_variables
 from collections import OrderedDict
-from pert import PERT
 import numpy as np
 import platform
-from scipy.stats import uniform, norm
 
 
-def generate_pert_random_variables(modeValue=0.5, gamma=2.0, nIterations=1000, random_seed=None):
-    """
-    The Beta-PERT methodology was developed in the context of Program Evaluation and Review Technique (PERT). It is 
-    based on a pessimistic estimate (minimum value), a most likely estimate (mode), and an optimistic estimate 
-    (maximum value), typically derived through expert elicitation. 
-    
-    :param modeValue: the mode
-    :param gamma: the spread parameter
-    :param nIterations: number of values to generate
-    :param random_seed: random seed
-    :return: nIterations samples from the specified PERT distribution
-    """
-    maxValue = 1
-    return PERT(0, modeValue, maxValue, gamma).rvs(size=nIterations, random_state=random_seed)
+def compute_tac_v_control_prob(vuln, tac, coeffs):
+    p00 = coeffs[0]
+    p10 = coeffs[1]
+    p01 = coeffs[2]
+    p20 = coeffs[3]
+    p11 = coeffs[4]
+    p02 = coeffs[5]
+    p30 = coeffs[6]
+    p21 = coeffs[7]
+    p12 = coeffs[8]
+    p03 = coeffs[9]
+    x = 1 - vuln
+    y = tac
+    return p00 + p10 * x + p01 * y + p20 * x ** 2 + p11 * x * y + p02 * y ** 2 + p30 * x ** 3 + p21 * x ** 2 * y + \
+           p12 * x * y ** 2 + p03 * y ** 3
 
 
-def generate_gaussian_random_variables(mean=0.0, stdDev=1.0, nIterations=1000, random_seed=None):
-    """
-    :param mean: mean
-    :param stdDev: standard deviation
-    :param nIterations: number of values to generate
-    :param random_seed: random seed
-    :return: nIterations samples from the normal distribution
-    """
-    return norm.rvs(loc=mean, scale=stdDev, size=nIterations, random_state=random_seed)
-
-
-def generate_uniform_random_variables(nIterations=1000, random_seed=None):
-    """
-    Generate random variables from the uniform distribution from 0 to 1
-    :param nIterations: number of values to generate
-    :param random_seed: random seed
-    :return: nIterations samples from the unit uniform distribution
-    """
-    return uniform.rvs(loc=0, scale=1, size=nIterations, random_state=random_seed)
-
-
-def determine_initial_access(tac, ia_control_inherent, ia_control_residual, vuln, ia_RV,
-                             coeffs):  # TODO these could be done "once" outside loop
+def determine_initial_access(tac, ia_control_inherent, ia_control_residual, vuln, ia_RV, coeffs):
+    # TODO these could be done "once" outside loop
     """
     Determine "initial access" (ATT&CK Recon, Resource Dev, Initial Access) success or failure
     :param tac: threat actor capability
@@ -74,20 +53,7 @@ def determine_initial_access(tac, ia_control_inherent, ia_control_residual, vuln
     """
     inherent_vuln = vuln * (1 - ia_control_inherent)
     residual_vuln = vuln * (1 - ia_control_residual)
-    p00 = coeffs[0]
-    p10 = coeffs[1]
-    p01 = coeffs[2]
-    p20 = coeffs[3]
-    p11 = coeffs[4]
-    p02 = coeffs[5]
-    p30 = coeffs[6]
-    p21 = coeffs[7]
-    p12 = coeffs[8]
-    p03 = coeffs[9]
-    x = 1 - inherent_vuln
-    y = tac
-    prob = p00 + p10 * x + p01 * y + p20 * x ** 2 + p11 * x * y + p02 * y ** 2 + \
-           p30 * x ** 3 + p21 * x ** 2 * y + p12 * x * y ** 2 + p03 * y ** 3
+    prob = compute_tac_v_control_prob(inherent_vuln, tac, coeffs)
     if prob < 0:
         prob = 0.
     elif prob > 1:
@@ -98,9 +64,7 @@ def determine_initial_access(tac, ia_control_inherent, ia_control_residual, vuln
     else:
         inherent_result = False
 
-    x = 1 - residual_vuln
-    prob = p00 + p10 * x + p01 * y + p20 * x ** 2 + p11 * x * y + p02 * y ** 2 + \
-           p30 * x ** 3 + p21 * x ** 2 * y + p12 * x * y ** 2 + p03 * y ** 3
+    prob = compute_tac_v_control_prob(residual_vuln, tac, coeffs)
     if prob < 0:
         prob = 0.
     elif prob > 1:
@@ -127,21 +91,7 @@ def determine_execution(tac, exec_control_inherent, exec_control_resdiual, explo
     """
     inherent_expl = exploitability * (1 - exec_control_inherent)
     residual_expl = exploitability * (1 - exec_control_resdiual)
-
-    p00 = coeffs[0]
-    p10 = coeffs[1]
-    p01 = coeffs[2]
-    p20 = coeffs[3]
-    p11 = coeffs[4]
-    p02 = coeffs[5]
-    p30 = coeffs[6]
-    p21 = coeffs[7]
-    p12 = coeffs[8]
-    p03 = coeffs[9]
-    x = 1 - inherent_expl
-    y = tac
-    prob = p00 + p10 * x + p01 * y + p20 * x ** 2 + p11 * x * y + p02 * y ** 2 + \
-           p30 * x ** 3 + p21 * x ** 2 * y + p12 * x * y ** 2 + p03 * y ** 3
+    prob = compute_tac_v_control_prob(inherent_expl, tac, coeffs)
     if prob < 0:
         prob = 0.
     elif prob > 1:
@@ -151,9 +101,7 @@ def determine_execution(tac, exec_control_inherent, exec_control_resdiual, explo
     else:
         inherent_result = False
 
-    x = 1 - residual_expl
-    prob = p00 + p10 * x + p01 * y + p20 * x ** 2 + p11 * x * y + p02 * y ** 2 + \
-           p30 * x ** 3 + p21 * x ** 2 * y + p12 * x * y ** 2 + p03 * y ** 3
+    prob = compute_tac_v_control_prob(residual_expl, tac, coeffs)
     if prob < 0:
         prob = 0.
     elif prob > 1:
@@ -179,21 +127,7 @@ def determine_movement(tac, movement_control_inherent, movement_control_resdiual
     """
     inherent_expl = exploitability * (1 - movement_control_inherent)
     residual_expl = exploitability * (1 - movement_control_resdiual)
-
-    p00 = coeffs[0]
-    p10 = coeffs[1]
-    p01 = coeffs[2]
-    p20 = coeffs[3]
-    p11 = coeffs[4]
-    p02 = coeffs[5]
-    p30 = coeffs[6]
-    p21 = coeffs[7]
-    p12 = coeffs[8]
-    p03 = coeffs[9]
-    x = 1 - inherent_expl
-    y = tac
-    prob = p00 + p10 * x + p01 * y + p20 * x ** 2 + p11 * x * y + p02 * y ** 2 + \
-           p30 * x ** 3 + p21 * x ** 2 * y + p12 * x * y ** 2 + p03 * y ** 3
+    prob = compute_tac_v_control_prob(inherent_expl, tac, coeffs)
     if prob < 0:
         prob = 0.
     elif prob > 1:
@@ -203,9 +137,7 @@ def determine_movement(tac, movement_control_inherent, movement_control_resdiual
     else:
         inherent_result = False
 
-    x = 1 - residual_expl
-    prob = p00 + p10 * x + p01 * y + p20 * x ** 2 + p11 * x * y + p02 * y ** 2 + \
-           p30 * x ** 3 + p21 * x ** 2 * y + p12 * x * y ** 2 + p03 * y ** 3
+    prob = compute_tac_v_control_prob(residual_expl, tac, coeffs)
     if prob < 0:
         prob = 0.
     elif prob > 1:
@@ -321,7 +253,7 @@ def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
 
 def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     """
-    Main routine to run the Booz Allen Cyber Risk Engine
+    Main routine to run CyRCE
     :param mode: controls mode, 'csf' or 'sp80053'
     :param cyrce_input: input object
     :param graph_model_file: network model file
@@ -350,18 +282,24 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     impactValue, directImpactValue, indirectImpactValue = compute_impact_values(cyrce_input, impactCalcMode)
 
     # Set up entities  TODO hack for now; trying to get toward auto gen via network, etc. (may need to change Entity to take a type ...)
-    # TODO programmatically create entity classes?
-    # Hand jamming some entities
     all_entities = AllEntities()
-    entity1 = CriticalServer(label="Crown Jewel")
-    entity1.value = impactValue
-    #entity2 = Server(label="WebApp")
-    #entity2.value = impactValue / 100
-    #entity3 = Desktop(label="Joe's Machine")
-    #entity3.value = impactValue / 10000
-    all_entities.list.append(entity1)
-    #all_entities.list.append(entity2)
-    #all_entities.list.append(entity3)
+    df = pd.read_csv(INPUTS['assets_file'])
+    for idx, row in df.iterrows():
+        if row['type'] == 'critical_server':
+            entity = CriticalServer(label=row['label'])
+            entity.value = impactValue * row['value']
+            entity.ip_address = row['ip']
+            all_entities.list.append(entity)
+        elif row['type'] == 'server':
+            entity = Server(label=row['label'])
+            entity.value = impactValue * row['value']
+            entity.ip_address = row['ip']
+            all_entities.list.append(entity)
+        elif row['type'] == 'desktop':
+            entity = Desktop(label=row['label'])
+            entity.value = impactValue * row['value']
+            entity.ip_address = row['ip']
+            all_entities.list.append(entity)
 
     # Set up threat actor
     threat_actor = ThreatActor(type=cyrce_input.scenario.attackThreatType)
@@ -371,7 +309,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     threat_actor.set_attempt_limit()
     threat_actor.set_capability(cyrce_input)
 
-    # Assign control values to each entity
+    # Assign control values to each entity # TODO controls should not be tied to entity; but will go with an entity
     for a in all_entities.list:
         if mode == 'csf':
             a.controls['csf']['identify']['value'] = cyrce_input.csf.identify.value
@@ -401,57 +339,59 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     # Abstraction groups
     # Done manually here; will be programmatic using asset management data, network model
     ng1 = NetworkGroup(label='subnet1')
-    #ng2 = NetworkGroup(label='subnet2')
-    #ng3 = NetworkGroup(label='subnet3')
-    #mg_servers = MachineGroup(label='servers', type='servers', network_group=ng2)
+    # ng2 = NetworkGroup(label='subnet2')
+    # ng3 = NetworkGroup(label='subnet3')
+    # mg_servers = MachineGroup(label='servers', type='servers', network_group=ng2)
     mg_critical_servers = MachineGroup(label='critical_servers', type='critical_servers', network_group=ng1)
-    #mg_desktops = MachineGroup(label='desktops', type='desktops', network_group=ng3)
-    #mg_servers.assets = [a for a in all_entities.list if a.type.lower() == 'server']
+    # mg_desktops = MachineGroup(label='desktops', type='desktops', network_group=ng3)
+    # mg_servers.assets = [a for a in all_entities.list if a.type.lower() == 'server']
     mg_critical_servers.assets = [a for a in all_entities.list if a.type.lower() == 'critical_server']
-    #mg_desktops.assets = [a for a in all_entities.list if a.type.lower() == 'desktop']
+    # mg_desktops.assets = [a for a in all_entities.list if a.type.lower() == 'desktop']
     ng1.machine_groups = [mg_critical_servers]
-    #ng2.machine_groups = [mg_servers]
-    #ng3.machine_groups = [mg_desktops]
+    # ng2.machine_groups = [mg_servers]
+    # ng3.machine_groups = [mg_desktops]
     network_model = Network(graph=graph)
-    network_model.list_of_network_groups = [ng1] #, ng2, ng3]
+    network_model.list_of_network_groups = [ng1]  # , ng2, ng3]
 
     for mg in ng1.machine_groups:
         for a in mg.assets:
             ng1.assets.append(a)
             a.machine_group = mg.label
             a.network_group = ng1.label
-#    for mg in ng2.machine_groups:
-#        for a in mg.assets:
-#            ng2.assets.append(a)
-#            a.machine_group = mg.label
-#            a.network_group = ng2.label
-#    for mg in ng3.machine_groups:
-#        for a in mg.assets:
-#            ng3.assets.append(a)
-#            a.machine_group = mg.label
-#            a.network_group = ng3.label
+    #    for mg in ng2.machine_groups:
+    #        for a in mg.assets:
+    #            ng2.assets.append(a)
+    #            a.machine_group = mg.label
+    #            a.network_group = ng2.label
+    #    for mg in ng3.machine_groups:
+    #        for a in mg.assets:
+    #            ng3.assets.append(a)
+    #            a.machine_group = mg.label
+    #            a.network_group = ng3.label
 
     # Handle and set up attack target(s)
     attack_mg_target = []
     if cyrce_input.scenario.attackTarget is not None:
         if 'type' in cyrce_input.scenario.attackTarget:
             attack_mg_target.append([mg for mg in ng1.machine_groups
-                                if cyrce_input.scenario.attackTarget.replace('type:', '') in [a.type for a in mg.assets]])
-            #attack_mg_target.append([mg for mg in ng2.machine_groups
+                                     if cyrce_input.scenario.attackTarget.replace('type:', '') in [a.type for a in
+                                                                                                   mg.assets]])
+            # attack_mg_target.append([mg for mg in ng2.machine_groups
             #                    if cyrce_input.scenario.attackTarget.replace('type:', '') in [a.type for a in mg.assets]])
-            #attack_mg_target.append([mg for mg in ng3.machine_groups
+            # attack_mg_target.append([mg for mg in ng3.machine_groups
             #                    if cyrce_input.scenario.attackTarget.replace('type:', '') in [a.type for a in mg.assets]])
         elif 'label' in cyrce_input.scenario.attackTarget:
             attack_mg_target.append([mg for mg in ng1.machine_groups
-                                if cyrce_input.scenario.attackTarget.replace('label:', '') in [a.label for a in mg.assets]])
-            #attack_mg_target.append([mg for mg in ng2.machine_groups
+                                     if cyrce_input.scenario.attackTarget.replace('label:', '') in [a.label for a in
+                                                                                                    mg.assets]])
+            # attack_mg_target.append([mg for mg in ng2.machine_groups
             #                    if cyrce_input.scenario.attackTarget.replace('label:', '') in [a.label for a in mg.assets]])
-            #attack_mg_target.append([mg for mg in ng3.machine_groups
+            # attack_mg_target.append([mg for mg in ng3.machine_groups
             #                    if cyrce_input.scenario.attackTarget.replace('label:', '') in [a.label for a in mg.assets]])
     else:
         attack_mg_target.append(ng1.machine_groups)
-        #attack_mg_target.append(ng2.machine_groups)
-        #attack_mg_target.append(ng3.machine_groups)
+        # attack_mg_target.append(ng2.machine_groups)
+        # attack_mg_target.append(ng3.machine_groups)
 
     attack_mg_target = flatten_list(attack_mg_target)
 
@@ -507,24 +447,31 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
 
     # Get random variable samples ahead of the MCS
     exploitabilityRV = generate_pert_random_variables(modeValue=exploitability,
-                                                      nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
+                                                      nIterations=numberOfMonteCarloRuns,
+                                                      random_seed=INPUTS['random_seed'])
     attackSurfaceRV = generate_pert_random_variables(modeValue=attackSurface,
-                                                     nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
+                                                     nIterations=numberOfMonteCarloRuns,
+                                                     random_seed=INPUTS['random_seed'])
     vulnerabilityRV = np.multiply(exploitabilityRV, attackSurfaceRV)
 
-    initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
-    execution_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
-    movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
+    initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns,
+                                                          random_seed=INPUTS['random_seed'])
+    execution_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns,
+                                                     random_seed=INPUTS['random_seed'])
+    movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns,
+                                                    random_seed=INPUTS['random_seed'])
 
     detectRVInherent = np.zeros([numberOfMonteCarloRuns])
     detectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.detect.value,
                                                       gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                                      nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
+                                                      nIterations=numberOfMonteCarloRuns,
+                                                      random_seed=INPUTS['random_seed'])
 
     protectRVInherent = np.zeros([numberOfMonteCarloRuns])
     protectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.protect.value,
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                                       nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
+                                                       nIterations=numberOfMonteCarloRuns,
+                                                       random_seed=INPUTS['random_seed'])
 
     # Compute combined Protect and Detect metric
     protectDetectRVInherent = np.zeros([numberOfMonteCarloRuns])
@@ -533,12 +480,14 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     respondRVInherent = np.zeros([numberOfMonteCarloRuns])
     respondRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.respond.value,
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                                       nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
+                                                       nIterations=numberOfMonteCarloRuns,
+                                                       random_seed=INPUTS['random_seed'])
 
     recoverRVInherent = np.zeros([numberOfMonteCarloRuns])
     recoverRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.recover.value,
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                                       nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
+                                                       nIterations=numberOfMonteCarloRuns,
+                                                       random_seed=INPUTS['random_seed'])
 
     # Compute combined Respond and Recover metric
     respondRecoverRVInherent = np.zeros([numberOfMonteCarloRuns])
@@ -557,7 +506,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
         tryCountI, tryCountR = 1, 1
         origin = 'internet'
         destination = attack_mg_target
-        entryNode = attack_mg_target # [mg_servers]
+        entryNode = attack_mg_target  # [mg_servers]
 
         initial_access = True
         currentNode = None
@@ -589,17 +538,17 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                                                                network_model=network_model,
                                                                failed_node_list=failedNodeList)
                     if nextNode is not None:
-                        logger.debug(' ' + attackDictElement['origin'] + ' ----> ' + nextNode.label)
+                        logger.debug(' ' + attackDictElement['origin'] + ' ---?--> ' + nextNode.label)
                 else:
                     nextNode = network_model.from_node_to_node(from_node=currentNode.network_group.label,
                                                                objective_list=attackDictElement['destination'],
                                                                network_model=network_model,
                                                                failed_node_list=failedNodeList)
                     if nextNode is not None:
-                        logger.debug(currentNode.label + ' ----> ' + nextNode.label)
+                        logger.debug(currentNode.label + ' --?--> ' + nextNode.label)
 
                 if nextNode is None:
-                    logger.debug(' End of path reached')
+                    # logger.debug(' End of path reached')
                     tryCountI += 1
                     tryCountR += 1
                     failedNodeList.append(nextNode)
@@ -652,7 +601,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                             logger.debug('   Failed (R), but trying again since inherent also failed')
 
                     else:
-                        logger.debug('   Next hop enabled (I) ...')
+                        logger.debug('    Next hop enabled (I) ...')
                         initial_access = False
                         currentNode = nextNode  # .label
 
@@ -661,7 +610,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                                 '   Failed (R), residual attack ends since inherent succeeded')
                             doResidual = False
                         elif residualAccess is True and doResidual:
-                            logger.debug('       Next hop enabled (R) ...')
+                            logger.debug('    Next hop enabled (R) ...')
                             currentNode = nextNode  # .label
 
                     if currentNode in attackDictElement['destination']:
@@ -684,8 +633,8 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                                                                            exploitabilityRV[iteration],
                                                                            execution_RV[iteration], coeffs)
 
-                logger.debug(' Execution success?. (I): ' + str(inherentExecution))
-                logger.debug(' Execution success? (R): ' + str(residualExecution))
+                logger.debug('          Execution success? (I): ' + str(inherentExecution))
+                logger.debug('          Execution success? (R): ' + str(residualExecution))
                 inherentImpact = 0.
                 residualImpact = 0.
                 inherentAccess = 0.
@@ -695,13 +644,13 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                     inherentAccess = 1.
                     inherentImpact, residualImpact = determine_impact(respondRecoverRVInherent[iteration],
                                                                       respondRecoverRVResidual[iteration], nextNode)
-                    logger.debug(' Inherent Impact: ' + str(round(inherentImpact, 2)))
-                    logger.debug(' Residual Impact: ' + str(round(residualImpact, 2)))
+                    logger.debug('             Inherent Impact: ' + str(round(inherentImpact, 2)))
+                    logger.debug('             Residual Impact: ' + str(round(residualImpact, 2)))
                 elif inherentExecution:
                     inherentAccess = 1.
                     inherentImpact, residualImpact = determine_impact(respondRecoverRVInherent[iteration],
                                                                       respondRecoverRVResidual[iteration], nextNode)
-                    logger.debug(' Inherent Impact: ' + str(round(residualImpact, 2)))
+                    logger.debug('             Inherent Impact: ' + str(round(residualImpact, 2)))
                     residualImpact = 0.
                 nextNode.assets[0].manifest['riskR'][iteration] = probability_scale_factor * residualImpact
                 nextNode.assets[0].manifest['riskI'][iteration] = probability_scale_factor * inherentImpact

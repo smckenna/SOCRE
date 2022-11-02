@@ -13,7 +13,7 @@ from config import INPUTS
 
 if __name__ == '__main__':
     #graph = nx.read_graphml(
-    #    os.path.join(os.path.dirname(__file__), '../model_resources/enterprise_network_model.graphml'))
+    #    os.path.join(os.path.dirname(__file__), '../model_resources/atomic_network_model.graphml'))
     #bbn_file = os.path.join(os.path.dirname(__file__), '../scenario_module/scenario_bbn_dbir.json')
     graph_model_file = INPUTS['graph_model_file']
     bbn_file = INPUTS['bbn_file']

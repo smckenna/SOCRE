@@ -6,7 +6,7 @@
     <key attr.name="ip_range" attr.type="string" for="node" id="k0" />
     <key attr.name="label" attr.type="string" for="node" id="k1" />
     <key attr.name="type" attr.type="string" for="node" id="k2" />
-    <graph id="Simple_Model" edgedefault="directed">
+    <graph id="Atomic_Model" edgedefault="directed">
     <node id="internet">
         <data key="k0">0.0.0.0/32</data>
         <data key="k1">Internet</data>
@@ -17,25 +17,12 @@
         <data key="k1">Internal SubNet</data>
         <data key="k2"></data>
     </node>
-    <node id="subnet2">
-        <data key="k0">192.168.2.0/16</data>
-        <data key="k1">External SubNet</data>
-        <data key="k2"></data>
-    </node>
-    <node id="subnet3">
-        <data key="k0">192.168.3.0/16</data>
-        <data key="k1">Endpoint Subnet</data>
-        <data key="k2"></data>
-    </node>
     <node id="hub">
         <data key="k0">255.255.255.252/32</data>
         <data key="k1">Model Hub Node</data>
         <data key="k2">hub</data>
     </node>
     <edge source="internet" target="hub"/>
-    <edge source="hub" target="subnet2"/>
-    <edge source="hub" target="subnet3"/>
-    <edge source="subnet2" target="subnet1"/>
-    <edge source="subnet3" target="subnet2"/>
+    <edge source="hub" target="subnet1"/>
   </graph>
 </graphml>
