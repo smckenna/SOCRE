@@ -533,12 +533,12 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     respondRVInherent = np.zeros([numberOfMonteCarloRuns])
     respondRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.respond.value,
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                                       nIterations=numberOfMonteCarloRuns)
+                                                       nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     recoverRVInherent = np.zeros([numberOfMonteCarloRuns])
     recoverRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.recover.value,
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                                       nIterations=numberOfMonteCarloRuns)
+                                                       nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     # Compute combined Respond and Recover metric
     respondRecoverRVInherent = np.zeros([numberOfMonteCarloRuns])
