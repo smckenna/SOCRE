@@ -251,13 +251,11 @@ def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
     return x11, p11
 
 
-def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
+def run_cyrce(control_mode, cyrce_input):
     """
     Main routine to run CyRCE
-    :param mode: controls mode, 'csf' or 'sp80053'
+    :param control_mode: controls mode, 'csf' or 'sp80053'
     :param cyrce_input: input object
-    :param graph_model_file: network model file
-    :param bbn_file: pybbn bbn file
     :return: outputs
     """
 
@@ -271,7 +269,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
         logger = logging.getLogger('Main')
         logger.setLevel(level=logging.INFO)
 
-    graph = nx.read_graphml(os.path.join(os.path.dirname(__file__), graph_model_file))
+    graph = nx.read_graphml(os.path.join(os.path.dirname(__file__), INPUTS['graph_model_file']))
 
     numberOfMonteCarloRuns = INPUTS['numberOfMonteCarloRuns']
     impactCalcMode = INPUTS['impactCalcMode']
@@ -315,13 +313,13 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
 
     # Assign control values to each entity # TODO controls should not be tied to entity; but will go with an entity
     for a in all_entities.list:
-        if mode == 'csf':
+        if control_mode == 'csf':
             a.controls['csf']['identify']['value'] = cyrce_input.csf.identify.value
             a.controls['csf']['protect']['value'] = cyrce_input.csf.protect.value
             a.controls['csf']['detect']['value'] = cyrce_input.csf.detect.value
             a.controls['csf']['respond']['value'] = cyrce_input.csf.respond.value
             a.controls['csf']['recover']['value'] = cyrce_input.csf.recover.value
-        elif mode == 'sp80053':
+        elif control_mode == 'sp80053':
             a.controls['sp80053']['AT'] = cyrce_input.sp80053.AT
             a.controls['sp80053']['RA'] = cyrce_input.sp80053.RA
 
@@ -337,8 +335,8 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
 
     scenario = ScenarioModel.Scenario(attackAction=attackAction, attackThreatType=attackThreatType,
                                       attackGeography=attackGeography, attackLossType=attackLossType,
-                                      attackIndustry=attackIndustry, orgSize=orgSize, bbn_file=bbn_file)
-    scenario.determine_scenario_probability_scale_factor(verbose=False)
+                                      attackIndustry=attackIndustry, orgSize=orgSize)
+    scenario.determine_scenario_probability_scale_factor(bbn_file=INPUTS['bbn_file'], verbose=False)
 
     # Abstraction groups
     # Will use asset management data, network model, etc.

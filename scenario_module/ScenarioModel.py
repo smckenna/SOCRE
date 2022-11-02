@@ -1,4 +1,3 @@
-import numpy as np
 from pybbn.graph.dag import Bbn
 from pybbn.graph.jointree import EvidenceBuilder
 from pybbn.pptc.inferencecontroller import InferenceController
@@ -9,12 +8,12 @@ import random
 
 class Scenario:
 
-    def __init__(self, bbn_file, attackGeography=None, attackAction=None, attackThreatType=None,
+    def __init__(self, attackGeography=None, attackAction=None, attackThreatType=None,
                  attackLossType=None, orgSize=None, attackIndustry=None, attackTarget=None,
                  label="Scenario"):
         self.label = label
         self.uuid = uuid4()
-        self.bbn_file = bbn_file
+        self.bbn_file = None
         self.probability_scale_factor = 0.5
         self.attackGeography = attackGeography
         self.attackAction = attackAction
@@ -25,20 +24,19 @@ class Scenario:
         self.attackIndustry = attackIndustry
         self.orgSize = orgSize
         self.attackThreatType = attackThreatType
-#        if attackTarget is None:
-#            self.attackTarget = 'any'
-#        else:
-        self.attackTarget = attackTarget  # TODO a type or a label, so how about 'type:xxx' , or 'label:yyy'
+        self.attackTarget = attackTarget
         self.veris_threat_actions = []
         self.ttps = []
 
-    def determine_scenario_probability_scale_factor(self, verbose=False):
+    def determine_scenario_probability_scale_factor(self, bbn_file, verbose=False):
         """
         Function that returns a scale factor for the relative probability of  attack using DBIR data in a BBN
+        :param bbn_file: bbn strucutre file
         :param verbose: Boolean to print result to terminal
         """
 
-        bbn = Bbn.from_json(self.bbn_file)
+        self.bbn_file = bbn_file
+        bbn = Bbn.from_json(bbn_file)
 
         # convert the BBN to a join tree
         join_tree = InferenceController.apply(bbn)
@@ -118,18 +116,18 @@ class Scenario:
 if __name__ == '__main__':
     bbn_file = os.path.join(os.path.dirname(__file__), './scenario_bbn_dbir.json')
 
-    # scenario = Scenario(bbn_file, attackLossType='c', orgSize='small', attackAction='hacking', attackGeography='apac',
+    # scenario = Scenario(attackLossType='c', orgSize='small', attackAction='hacking', attackGeography='apac',
     #                    attackThreatType='external', aprioriProbability=0.5)
-    # scenario = Scenario(bbn_file, attackAction='hacking', attackGeography='na', attackIndustry='professional', aprioriProbability=0.5)
-    scenario = Scenario(bbn_file, attackLossType='a', orgSize='small', attackAction='social', attackGeography='na',
+    # scenario = Scenario(attackAction='hacking', attackGeography='na', attackIndustry='professional', aprioriProbability=0.5)
+    scenario = Scenario(attackLossType='a', orgSize='small', attackAction='social', attackGeography='na',
                         attackIndustry='professional')
-    scenario = Scenario(bbn_file, attackThreatType='internal', attackAction='misuse')
-    scenario = Scenario(bbn_file, attackIndustry='information', orgSize='large', attackThreatType='threatactor',
+    scenario = Scenario(attackThreatType='internal', attackAction='misuse')
+    scenario = Scenario(attackIndustry='information', orgSize='large', attackThreatType='threatactor',
                         attackAction='malware', attackGeography='na',
                         attackLossType='c')
-    scenario = Scenario(bbn_file, attackIndustry='finance', orgSize='large',
+    scenario = Scenario(attackIndustry='finance', orgSize='large',
                         attackGeography='na')
-    # scenario = Scenario(bbn_file)
-    scenario.determine_scenario_probability_scale_factor(verbose=True)
+    scenario = Scenario()
+    scenario.determine_scenario_probability_scale_factor(bbn_file=bbn_file, verbose=True)
 
     print(round(scenario.probability_scale_factor, 2))

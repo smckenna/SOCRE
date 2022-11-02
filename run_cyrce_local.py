@@ -9,14 +9,8 @@ from api_resources.cyrce_resource import CyrceResource
 from core_module.model_main import run_cyrce
 from core_module.analysis import run_ttp_coverage_metric
 from scenario_module.ScenarioModel import Scenario
-from config import INPUTS
 
 if __name__ == '__main__':
-    #graph = nx.read_graphml(
-    #    os.path.join(os.path.dirname(__file__), '../model_resources/atomic_network_model.graphml'))
-    #bbn_file = os.path.join(os.path.dirname(__file__), '../scenario_module/scenario_bbn_dbir.json')
-    graph_model_file = INPUTS['graph_model_file']
-    bbn_file = INPUTS['bbn_file']
 
     attackMotivators = AttackMotivators(2.5, 2.5, 2.5, 2.5)
     attackSurface = AttackSurface(3, 2)
@@ -26,9 +20,8 @@ if __name__ == '__main__':
     indirectImpact = IndirectImpact(3, 3, 2, 1)
     impact = Impact(directImpact, indirectImpact)
     scenario = Scenario(attackAction='hacking', attackThreatType='threatactor', attackTarget='label:Crown Jewel',
-                        attackLossType='c', attackIndustry='information', attackGeography='na', orgSize="large",
-                        bbn_file=bbn_file)
-    # scenario = Scenario(bbn_file=bbn_file)  # know nothing case; posterior is prior
+                        attackLossType='c', attackIndustry='information', attackGeography='na', orgSize="large")
+    # scenario = Scenario()  # know nothing case; posterior is prior
     identify = CsfIdentify(IDAM=IDAM(0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
                            IDBE=IDBE(0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
                            IDGV=IDGV(0.8, 0.8, 0.8, 0.8, 0.8),
@@ -85,6 +78,11 @@ if __name__ == '__main__':
             RA_7=ra_7.value, RA_9=ra_9)
     sp80053 = Sp80053_(RA=ra, AT=at)
 
+    control_mode = 'csf'
+    if control_mode == 'csf':
+        sp80053 = None
+    else:
+        csf = None
     cyrce_input = CyrceInput(attackMotivators=attackMotivators,
                              attackSurface=attackSurface,
                              exploitability=exploitability,
@@ -92,17 +90,17 @@ if __name__ == '__main__':
                              impact=impact,
                              csf=csf, sp80053=sp80053,
                              scenario=scenario)
-    output_csf = run_cyrce(cyrce_input=cyrce_input, mode='csf', graph_model_file=graph_model_file, bbn_file=bbn_file)
-    #output_80053 = run_cyrce(cyrce_input=cyrce_input, mode='sp80053', graph_model_file=graph_model_file, bbn_file=bbn_file)
+    output_csf = run_cyrce(cyrce_input=cyrce_input, control_mode=control_mode)
+    #output_80053 = run_cyrce(cyrce_input=cyrce_input, control_mode='sp80053')
 
     # mimic api
-    with open('../request.json') as file:
+    with open('request.json') as file:
         json_data = json.load(file)
 
     cy_res = CyrceResource()
 
-    #output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph_model_file, bbn_file).reprJSON()
-    #output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph_model_file, bbn_file).reprJSON()
+    #output_csf_api = run_cyrce(control_mode='csf', cyrce_input=cy_res.json_to_input(json_data)).reprJSON()
+    #output_80053_api = run_cyrce(control_mode='sp80053', cyrce_input=cy_res.json_to_input(json_data)).reprJSON()
 
    # with open('../sp80053.json') as file:
     #    json_data = json.load(file)
