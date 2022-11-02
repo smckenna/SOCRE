@@ -19,8 +19,8 @@ if __name__ == '__main__':
     bbn_file = INPUTS['bbn_file']
 
     attackMotivators = AttackMotivators(2.5, 2.5, 2.5, 2.5)
-    attackSurface = AttackSurface(2.5, 2.5)
-    exploitability = Exploitability(2.5)
+    attackSurface = AttackSurface(3, 2)
+    exploitability = Exploitability(2)
     threatActorInput = ThreatActorInput(determination='high', resources='organization', sophistication='advanced')
     directImpact = DirectImpact(3, 3, 2, 1)
     indirectImpact = IndirectImpact(3, 3, 2, 1)
@@ -54,13 +54,13 @@ if __name__ == '__main__':
                        DECM=DECM(value=0.4, DECM1=0.4, DECM2=0.4, DECM3=0.4, DECM4=0.4, DECM5=0.4, DECM6=0.4, DECM7=0.4,
                                  DECM8=0.4),
                        DEDP=DEDP(value=0.4, DEDP1=0.4, DEDP2=0.4, DEDP3=0.4, DEDP4=0.4, DEDP5=0.4))
-    respond = CsfRespond(value=0.6,
+    respond = CsfRespond(value=0.46,
                          RSRP=RSRP(value=0.426, RSRP1=0.426),
                          RSCO=RSCO(value=0.426, RSCO1=0.426, RSCO2=0.426, RSCO3=0.426, RSCO4=0.426, RSCO5=0.426),
                          RSAN=RSAN(value=0.426, RSAN1=0.426, RSAN2=0.426, RSAN3=0.426, RSAN4=0.426, RSAN5=0.426),
                          RSMI=RSMI(value=0.426, RSMI1=0.426, RSMI2=0.426, RSMI3=0.426),
                          RSIM=RSIM(value=0.426, RSIM1=0.426, RSIM2=0.426))
-    recover = CsfRecover(value=0.6,
+    recover = CsfRecover(value=0.46,
                          RCRP=RCRP(value=0.426, RCRP1=0.426),
                          RCIM=RCIM(value=0.426, RCIM1=0.426, RCIM2=0.426),
                          RCCO=RCCO(value=0.426, RCCO1=0.426, RCCO2=0.426, RCCO3=0.426)
@@ -101,7 +101,7 @@ if __name__ == '__main__':
 
     cy_res = CyrceResource()
 
-    output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph_model_file, bbn_file).reprJSON()
+    #output_csf_api = run_cyrce('csf', cy_res.json_to_input(json_data), graph_model_file, bbn_file).reprJSON()
     #output_80053_api = run_cyrce('80053', cy_res.json_to_input(json_data), graph_model_file, bbn_file).reprJSON()
 
    # with open('../sp80053.json') as file:
