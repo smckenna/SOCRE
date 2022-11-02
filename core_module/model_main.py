@@ -23,7 +23,7 @@ import platform
 from scipy.stats import uniform, norm
 
 
-def generate_pert_random_variables(modeValue=0.5, gamma=2.0, nIterations=1000):
+def generate_pert_random_variables(modeValue=0.5, gamma=2.0, nIterations=1000, random_seed=None):
     """
     The Beta-PERT methodology was developed in the context of Program Evaluation and Review Technique (PERT). It is 
     based on a pessimistic estimate (minimum value), a most likely estimate (mode), and an optimistic estimate 
@@ -32,29 +32,32 @@ def generate_pert_random_variables(modeValue=0.5, gamma=2.0, nIterations=1000):
     :param modeValue: the mode
     :param gamma: the spread parameter
     :param nIterations: number of values to generate
+    :param random_seed: random seed
     :return: nIterations samples from the specified PERT distribution
     """
     maxValue = 1
-    return PERT(0, modeValue, maxValue, gamma).rvs(size=nIterations)
+    return PERT(0, modeValue, maxValue, gamma).rvs(size=nIterations, random_state=random_seed)
 
 
-def generate_gaussian_random_variables(mean=0.0, stdDev=1.0, nIterations=1000):
+def generate_gaussian_random_variables(mean=0.0, stdDev=1.0, nIterations=1000, random_seed=None):
     """
     :param mean: mean
     :param stdDev: standard deviation
     :param nIterations: number of values to generate
+    :param random_seed: random seed
     :return: nIterations samples from the normal distribution
     """
-    return norm.rvs(loc=mean, scale=stdDev, size=nIterations)
+    return norm.rvs(loc=mean, scale=stdDev, size=nIterations, random_state=random_seed)
 
 
-def generate_uniform_random_variables(nIterations=1000):
+def generate_uniform_random_variables(nIterations=1000, random_seed=None):
     """
     Generate random variables from the uniform distribution from 0 to 1
     :param nIterations: number of values to generate
+    :param random_seed: random seed
     :return: nIterations samples from the unit uniform distribution
     """
-    return uniform.rvs(loc=0, scale=1, size=nIterations)
+    return uniform.rvs(loc=0, scale=1, size=nIterations, random_state=random_seed)
 
 
 def determine_initial_access(tac, ia_control_inherent, ia_control_residual, vuln, ia_RV,
@@ -329,7 +332,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     # TODO NETWORK ATTACK!
     # used for testing, etc.
     if platform.uname()[1] == 'BAHG3479J3':
-        np.random.seed(101798)
+        np.random.seed(INPUTS['random_seed'])
         logger = logging.getLogger('Main')
         logger.setLevel(level=logging.DEBUG)
     else:
@@ -504,24 +507,24 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
 
     # Get random variable samples ahead of the MCS
     exploitabilityRV = generate_pert_random_variables(modeValue=exploitability,
-                                                      nIterations=numberOfMonteCarloRuns)
+                                                      nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
     attackSurfaceRV = generate_pert_random_variables(modeValue=attackSurface,
-                                                     nIterations=numberOfMonteCarloRuns)
+                                                     nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
     vulnerabilityRV = np.multiply(exploitabilityRV, attackSurfaceRV)
 
-    initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
-    execution_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
-    movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
+    initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
+    execution_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
+    movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     detectRVInherent = np.zeros([numberOfMonteCarloRuns])
     detectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.detect.value,
                                                       gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                                      nIterations=numberOfMonteCarloRuns)
+                                                      nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     protectRVInherent = np.zeros([numberOfMonteCarloRuns])
     protectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.protect.value,
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                                       nIterations=numberOfMonteCarloRuns)
+                                                       nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     # Compute combined Protect and Detect metric
     protectDetectRVInherent = np.zeros([numberOfMonteCarloRuns])
