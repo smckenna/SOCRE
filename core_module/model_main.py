@@ -348,7 +348,6 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     logger.debug("      Assigning assets to machine groups")
     network_model.assign_assets_to_machine_groups()
 
-
     # Handle and set up attack target(s)
     attack_mg_target = []
     if cyrce_input.scenario.attackTarget is not None:
@@ -431,27 +430,18 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                                                      random_seed=INPUTS['random_seed'])
     movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns,
                                                     random_seed=INPUTS['random_seed'])
-                                                      nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
-    attackSurfaceRV = generate_pert_random_variables(modeValue=attackSurface,
-                                                     nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
-    vulnerabilityRV = np.multiply(exploitabilityRV, attackSurfaceRV)
-
-    initial_accessRV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
-    execution_accessRV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     detectRVInherent = np.zeros([numberOfMonteCarloRuns])
     detectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.detect.value,
                                                       gamma=0.1 + 100 * cyrce_input.csf.identify.value,
                                                       nIterations=numberOfMonteCarloRuns,
                                                       random_seed=INPUTS['random_seed'])
-                                                      nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     protectRVInherent = np.zeros([numberOfMonteCarloRuns])
     protectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.protect.value,
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
                                                        nIterations=numberOfMonteCarloRuns,
                                                        random_seed=INPUTS['random_seed'])
-                                                       nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     # Compute combined Protect and Detect metric
     protectDetectRVInherent = np.zeros([numberOfMonteCarloRuns])
@@ -462,14 +452,12 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
                                                        nIterations=numberOfMonteCarloRuns,
                                                        random_seed=INPUTS['random_seed'])
-                                                       nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     recoverRVInherent = np.zeros([numberOfMonteCarloRuns])
     recoverRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.recover.value,
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
                                                        nIterations=numberOfMonteCarloRuns,
                                                        random_seed=INPUTS['random_seed'])
-                                                       nIterations=numberOfMonteCarloRuns, random_seed=INPUTS['random_seed'])
 
     # Compute combined Respond and Recover metric
     respondRecoverRVInherent = np.zeros([numberOfMonteCarloRuns])
@@ -522,7 +510,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                     if nextNode is not None:
                         logger.debug(' ' + attackDictElement['origin'] + ' ---?--> ' + nextNode.label)
                 else:
-                    nextNode = network_model.from_node_to_node(from_node=currentNode.network_group.label,
+                    nextNode = network_model.from_node_to_node(from_node=currentNode.network_group,
                                                                objective_list=attackDictElement['destination'],
                                                                network_model=network_model,
                                                                failed_node_list=failedNodeList)
@@ -530,7 +518,6 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                         logger.debug(currentNode.label + ' --?--> ' + nextNode.label)
 
                 if nextNode is None:
-                    # logger.debug(' End of path reached')
                     tryCountI += 1
                     tryCountR += 1
                     failedNodeList.append(nextNode)

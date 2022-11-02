@@ -2,7 +2,6 @@ import random
 from environment_module.groups import NetworkGroup, MachineGroup
 from helpers.helper_functions import parse_ip_ranges
 from netaddr import *
-import networkx as nx
 import logging
 
 
@@ -21,7 +20,7 @@ class Network(object):
 
     def from_node_to_node(self, from_node, objective_list, network_model, failed_node_list):
 
-        objective = [_.network_group.label for _ in objective_list]
+        objective = [_.network_group for _ in objective_list]
 
         # Find all paths from the from_node to each to_node
         all_paths = []
