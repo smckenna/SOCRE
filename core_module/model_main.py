@@ -281,7 +281,8 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     # Compute total impact from direct and indirect
     impactValue, directImpactValue, indirectImpactValue = compute_impact_values(cyrce_input, impactCalcMode)
 
-    # Set up entities  TODO hack for now; trying to get toward auto gen via network, etc. (may need to change Entity to take a type ...)
+    # Set up entities
+    # Manual here, for now
     all_entities = AllEntities()
     df = pd.read_csv(INPUTS['assets_file'])
     for idx, row in df.iterrows():
@@ -289,16 +290,19 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
             entity = CriticalServer(label=row['label'])
             entity.value = impactValue * row['value']
             entity.ip_address = row['ip']
+            entity.os = row['os']
             all_entities.list.append(entity)
         elif row['type'] == 'server':
             entity = Server(label=row['label'])
             entity.value = impactValue * row['value']
             entity.ip_address = row['ip']
+            entity.os = row['os']
             all_entities.list.append(entity)
         elif row['type'] == 'desktop':
             entity = Desktop(label=row['label'])
             entity.value = impactValue * row['value']
             entity.ip_address = row['ip']
+            entity.os = row['os']
             all_entities.list.append(entity)
 
     # Set up threat actor
@@ -337,62 +341,29 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     scenario.determine_scenario_probability_scale_factor(verbose=False)
 
     # Abstraction groups
-    # Done manually here; will be programmatic using asset management data, network model
-    ng1 = NetworkGroup(label='subnet1')
-    # ng2 = NetworkGroup(label='subnet2')
-    # ng3 = NetworkGroup(label='subnet3')
-    # mg_servers = MachineGroup(label='servers', type='servers', network_group=ng2)
-    mg_critical_servers = MachineGroup(label='critical_servers', type='critical_servers', network_group=ng1)
-    # mg_desktops = MachineGroup(label='desktops', type='desktops', network_group=ng3)
-    # mg_servers.assets = [a for a in all_entities.list if a.type.lower() == 'server']
-    mg_critical_servers.assets = [a for a in all_entities.list if a.type.lower() == 'critical_server']
-    # mg_desktops.assets = [a for a in all_entities.list if a.type.lower() == 'desktop']
-    ng1.machine_groups = [mg_critical_servers]
-    # ng2.machine_groups = [mg_servers]
-    # ng3.machine_groups = [mg_desktops]
+    # Will use asset management data, network model, etc.
     network_model = Network(graph=graph)
-    network_model.list_of_network_groups = [ng1]  # , ng2, ng3]
+    logger.debug("      Assigning assets to network groups")
+    network_model.assign_assets_to_network_groups(all_entities.list)
+    logger.debug("      Assigning assets to machine groups")
+    network_model.assign_assets_to_machine_groups()
 
-    for mg in ng1.machine_groups:
-        for a in mg.assets:
-            ng1.assets.append(a)
-            a.machine_group = mg.label
-            a.network_group = ng1.label
-    #    for mg in ng2.machine_groups:
-    #        for a in mg.assets:
-    #            ng2.assets.append(a)
-    #            a.machine_group = mg.label
-    #            a.network_group = ng2.label
-    #    for mg in ng3.machine_groups:
-    #        for a in mg.assets:
-    #            ng3.assets.append(a)
-    #            a.machine_group = mg.label
-    #            a.network_group = ng3.label
 
     # Handle and set up attack target(s)
     attack_mg_target = []
     if cyrce_input.scenario.attackTarget is not None:
         if 'type' in cyrce_input.scenario.attackTarget:
-            attack_mg_target.append([mg for mg in ng1.machine_groups
-                                     if cyrce_input.scenario.attackTarget.replace('type:', '') in [a.type for a in
-                                                                                                   mg.assets]])
-            # attack_mg_target.append([mg for mg in ng2.machine_groups
-            #                    if cyrce_input.scenario.attackTarget.replace('type:', '') in [a.type for a in mg.assets]])
-            # attack_mg_target.append([mg for mg in ng3.machine_groups
-            #                    if cyrce_input.scenario.attackTarget.replace('type:', '') in [a.type for a in mg.assets]])
+            for ng in network_model.list_of_network_groups:
+                attack_mg_target.append([mg for mg in ng.machine_groups
+                                         if cyrce_input.scenario.attackTarget.replace('type:', '') in [a.type for a in
+                                                                                                       mg.assets]])
         elif 'label' in cyrce_input.scenario.attackTarget:
-            attack_mg_target.append([mg for mg in ng1.machine_groups
-                                     if cyrce_input.scenario.attackTarget.replace('label:', '') in [a.label for a in
-                                                                                                    mg.assets]])
-            # attack_mg_target.append([mg for mg in ng2.machine_groups
-            #                    if cyrce_input.scenario.attackTarget.replace('label:', '') in [a.label for a in mg.assets]])
-            # attack_mg_target.append([mg for mg in ng3.machine_groups
-            #                    if cyrce_input.scenario.attackTarget.replace('label:', '') in [a.label for a in mg.assets]])
+            for ng in network_model.list_of_network_groups:
+                attack_mg_target.append([mg for mg in ng.machine_groups
+                                         if cyrce_input.scenario.attackTarget.replace('label:', '') in [a.label for a in
+                                                                                                        mg.assets]])
     else:
-        attack_mg_target.append(ng1.machine_groups)
-        # attack_mg_target.append(ng2.machine_groups)
-        # attack_mg_target.append(ng3.machine_groups)
-
+        attack_mg_target = [ng.machine_groups for ng in network_model.list_of_network_groups]
     attack_mg_target = flatten_list(attack_mg_target)
 
     attack_assets_target = []

@@ -13,17 +13,17 @@
         <data key="k2">internet</data>
     </node>
     <node id="subnet1">
-        <data key="k0">192.168.1.0/16</data>
+        <data key="k0">192.168.1.0/24</data>
         <data key="k1">Internal SubNet</data>
         <data key="k2"></data>
     </node>
     <node id="subnet2">
-        <data key="k0">192.168.2.0/16</data>
+        <data key="k0">192.168.2.0/24</data>
         <data key="k1">External SubNet</data>
         <data key="k2"></data>
     </node>
     <node id="subnet3">
-        <data key="k0">192.168.3.0/16</data>
+        <data key="k0">192.168.3.0/24</data>
         <data key="k1">Endpoint Subnet</data>
         <data key="k2"></data>
     </node>

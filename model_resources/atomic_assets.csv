@@ -1,2 +1,2 @@
-type,label,ip,value
-critical_server,Crown Jewel,192.168.1.1,1
+type,label,ip,os,value
+critical_server,Crown Jewel,192.168.1.1,linux,1

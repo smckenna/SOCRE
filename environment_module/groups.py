@@ -3,9 +3,9 @@ class MachineGroup(object):
     Class that defines a machine group object
     """
 
-    def __init__(self, label, type, network_group):
+    def __init__(self, label, network_group):
         self.label = label
-        self.type = type
+        #self.type = type
         self.node = None
         self.assets = []
         self.network_group = network_group
