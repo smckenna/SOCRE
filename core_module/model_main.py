@@ -9,11 +9,13 @@ import networkx as nx
 import os
 from output_module.cyrce_output import CyrceOutput, ValueVar
 from config import INPUTS
-from entity_module.Entity import Organization
+from entity_module.Entity import *
 from threat_module.ThreatActor import ThreatActor
 from scenario_module import ScenarioModel
-from environment_module.network_traversal import *
-from helpers.helper_functions import get_confidence_interval
+# from environment_module.network_traversal import *
+from environment_module.groups import *
+from environment_module.network import *
+from helpers.helper_functions import get_confidence_interval, flatten_list
 from collections import OrderedDict
 from pert import PERT
 import numpy as np
@@ -55,7 +57,8 @@ def generate_uniform_random_variables(nIterations=1000):
     return uniform.rvs(loc=0, scale=1, size=nIterations)
 
 
-def determine_initial_access(tac, ia_control_inherent, ia_control_residual, vuln, ia_RV, coeffs):  # TODO these could be done "once" outside loop
+def determine_initial_access(tac, ia_control_inherent, ia_control_residual, vuln, ia_RV,
+                             coeffs):  # TODO these could be done "once" outside loop
     """
     Determine "initial access" (ATT&CK Recon, Resource Dev, Initial Access) success or failure
     :param tac: threat actor capability
@@ -221,8 +224,8 @@ def determine_impact(impact_control_inherent, impact_control_residual, entity):
     :param entity: entity object
     :return: A pair of impact values (inherent, residual)
     """
-    inherentImpact = entity.value * (1 - impact_control_inherent)
-    residualImpact = entity.value * (1 - impact_control_residual)
+    inherentImpact = entity.assets[0].value * (1 - impact_control_inherent)
+    residualImpact = entity.assets[0].value * (1 - impact_control_residual)
 
     return inherentImpact, residualImpact
 
@@ -323,6 +326,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     :return: outputs
     """
 
+    # TODO NETWORK ATTACK!
     # used for testing, etc.
     if platform.uname()[1] == 'BAHG3479J3':
         np.random.seed(101798)
@@ -342,12 +346,19 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     # Compute total impact from direct and indirect
     impactValue, directImpactValue, indirectImpactValue = compute_impact_values(cyrce_input, impactCalcMode)
 
-    # Define the "atomic" entity
-    enterprise = Organization(label='Enterprise')
-    enterprise.value = impactValue
-
-    # Create list of all entities
-    allEntitiesList = [enterprise]
+    # Set up entities  TODO hack for now; trying to get toward auto gen via network, etc. (may need to change Entity to take a type ...)
+    # TODO programmatically create entity classes?
+    # Hand jamming some entities
+    all_entities = AllEntities()
+    entity1 = CriticalServer(label="Crown Jewel")
+    entity1.value = impactValue
+    #entity2 = Server(label="WebApp")
+    #entity2.value = impactValue / 100
+    #entity3 = Desktop(label="Joe's Machine")
+    #entity3.value = impactValue / 10000
+    all_entities.list.append(entity1)
+    #all_entities.list.append(entity2)
+    #all_entities.list.append(entity3)
 
     # Set up threat actor
     threat_actor = ThreatActor(type=cyrce_input.scenario.attackThreatType)
@@ -358,7 +369,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     threat_actor.set_capability(cyrce_input)
 
     # Assign control values to each entity
-    for a in allEntitiesList:
+    for a in all_entities.list:
         if mode == 'csf':
             a.controls['csf']['identify']['value'] = cyrce_input.csf.identify.value
             a.controls['csf']['protect']['value'] = cyrce_input.csf.protect.value
@@ -373,7 +384,6 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
 
     # Use this metadata to set scale factor on likelihood of attack
     attackAction = cyrce_input.scenario.attackAction
-    attackTarget = [a for a in allEntitiesList if a.label.lower() == cyrce_input.scenario.attackTarget][0]
     attackIndustry = cyrce_input.scenario.attackIndustry
     attackGeography = cyrce_input.scenario.attackGeography
     attackLossType = cyrce_input.scenario.attackLossType
@@ -384,6 +394,68 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                                       attackGeography=attackGeography, attackLossType=attackLossType,
                                       attackIndustry=attackIndustry, orgSize=orgSize, bbn_file=bbn_file)
     scenario.determine_scenario_probability_scale_factor(verbose=False)
+
+    # Abstraction groups
+    # Done manually here; will be programmatic using asset management data, network model
+    ng1 = NetworkGroup(label='subnet1')
+    #ng2 = NetworkGroup(label='subnet2')
+    #ng3 = NetworkGroup(label='subnet3')
+    #mg_servers = MachineGroup(label='servers', type='servers', network_group=ng2)
+    mg_critical_servers = MachineGroup(label='critical_servers', type='critical_servers', network_group=ng1)
+    #mg_desktops = MachineGroup(label='desktops', type='desktops', network_group=ng3)
+    #mg_servers.assets = [a for a in all_entities.list if a.type.lower() == 'server']
+    mg_critical_servers.assets = [a for a in all_entities.list if a.type.lower() == 'critical_server']
+    #mg_desktops.assets = [a for a in all_entities.list if a.type.lower() == 'desktop']
+    ng1.machine_groups = [mg_critical_servers]
+    #ng2.machine_groups = [mg_servers]
+    #ng3.machine_groups = [mg_desktops]
+    network_model = Network(graph=graph)
+    network_model.list_of_network_groups = [ng1] #, ng2, ng3]
+
+    for mg in ng1.machine_groups:
+        for a in mg.assets:
+            ng1.assets.append(a)
+            a.machine_group = mg
+            a.network_group = ng1
+#    for mg in ng2.machine_groups:
+#        for a in mg.assets:
+#            ng2.assets.append(a)
+#            a.machine_group = mg
+#            a.network_group = ng2
+#    for mg in ng3.machine_groups:
+#        for a in mg.assets:
+#            ng3.assets.append(a)
+#            a.machine_group = mg
+#            a.network_group = ng3
+
+    # Handle and set up attack target(s)
+    attack_mg_target = []
+    if cyrce_input.scenario.attackTarget is not None:
+        if 'type' in cyrce_input.scenario.attackTarget:
+            attack_mg_target.append([mg for mg in ng1.machine_groups
+                                if cyrce_input.scenario.attackTarget.replace('type:', '') in [a.type for a in mg.assets]])
+            #attack_mg_target.append([mg for mg in ng2.machine_groups
+            #                    if cyrce_input.scenario.attackTarget.replace('type:', '') in [a.type for a in mg.assets]])
+            #attack_mg_target.append([mg for mg in ng3.machine_groups
+            #                    if cyrce_input.scenario.attackTarget.replace('type:', '') in [a.type for a in mg.assets]])
+        elif 'label' in cyrce_input.scenario.attackTarget:
+            attack_mg_target.append([mg for mg in ng1.machine_groups
+                                if cyrce_input.scenario.attackTarget.replace('label:', '') in [a.label for a in mg.assets]])
+            #attack_mg_target.append([mg for mg in ng2.machine_groups
+            #                    if cyrce_input.scenario.attackTarget.replace('label:', '') in [a.label for a in mg.assets]])
+            #attack_mg_target.append([mg for mg in ng3.machine_groups
+            #                    if cyrce_input.scenario.attackTarget.replace('label:', '') in [a.label for a in mg.assets]])
+    else:
+        attack_mg_target.append(ng1.machine_groups)
+        #attack_mg_target.append(ng2.machine_groups)
+        #attack_mg_target.append(ng3.machine_groups)
+
+    attack_mg_target = flatten_list(attack_mg_target)
+
+    attack_assets_target = []
+    for mg in attack_mg_target:
+        for a in mg.assets:
+            attack_assets_target.append(a)
 
     # TODO make these entries optional, if that is deemed a good idea, then update them as below if there is info to
     # TODO use for the update, o/w use baseline
@@ -439,6 +511,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
 
     initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
     execution_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
+    movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
 
     detectRVInherent = np.zeros([numberOfMonteCarloRuns])
     detectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.detect.value,
@@ -480,8 +553,8 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
 
         tryCountI, tryCountR = 1, 1
         origin = 'internet'
-        destination = attackTarget.network_label  # attack target
-        entryNode = attackTarget.network_label  # first node to gain entry
+        destination = attack_mg_target
+        entryNode = attack_mg_target # [mg_servers]
 
         initial_access = True
         currentNode = None
@@ -508,23 +581,19 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
             while tryCountI <= threat_actor.attempt_limit:  # tryCountI should always be < tryCountR
 
                 if initial_access:
-                    nextNode = from_node_to_node(from_node=attackDictElement['origin'],
-                                                 objective_node=attackDictElement['entryPoint'],
-                                                 attack_type=attackDictElement['attack_type'],
-                                                 graph=graph,
-                                                 all_assets_list=allEntitiesList,
-                                                 failed_node_list=failedNodeList)
+                    nextNode = network_model.from_node_to_node(from_node=attackDictElement['origin'],
+                                                               objective_list=attackDictElement['entryPoint'],
+                                                               network_model=network_model,
+                                                               failed_node_list=failedNodeList)
                     if nextNode is not None:
-                        logger.debug(' ' + attackDictElement['origin'] + ' ----> ' + nextNode.network_label)
+                        logger.debug(' ' + attackDictElement['origin'] + ' ----> ' + nextNode.label)
                 else:
-                    nextNode = from_node_to_node(from_node=currentNode,
-                                                 objective_node=attackDictElement['destination'],
-                                                 attack_type=attackDictElement['attack_type'],
-                                                 graph=graph,
-                                                 all_assets_list=allEntitiesList,
-                                                 failed_node_list=failedNodeList)
+                    nextNode = network_model.from_node_to_node(from_node=currentNode.network_group.label,
+                                                               objective_list=attackDictElement['destination'],
+                                                               network_model=network_model,
+                                                               failed_node_list=failedNodeList)
                     if nextNode is not None:
-                        logger.debug(currentNode + ' ----> ' + nextNode.network_label)
+                        logger.debug(currentNode.label + ' ----> ' + nextNode.label)
 
                 if nextNode is None:
                     logger.debug(' End of path reached')
@@ -547,12 +616,19 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                             logger.debug('   End of path reached (R), residual attack ends')
                         continue
 
-                # Determine if threat actor gains INITIAL ACCESS to the organization
-                inherentAccess, residualAccess = determine_initial_access(threat_actor.properties['capability'],
-                                                                          protectDetectRVInherent[iteration],
-                                                                          protectDetectRVResidual[iteration],
-                                                                          vulnerabilityRV[iteration],
-                                                                          initial_access_RV[iteration], coeffs)
+                # Determine if threat actor gains INITIAL ACCESS
+                if initial_access:
+                    inherentAccess, residualAccess = determine_initial_access(threat_actor.properties['capability'],
+                                                                              protectDetectRVInherent[iteration],
+                                                                              protectDetectRVResidual[iteration],
+                                                                              vulnerabilityRV[iteration],
+                                                                              initial_access_RV[iteration], coeffs)
+                else:  # Determine if threat actor moves to next node
+                    inherentAccess, residualAccess = determine_movement(threat_actor.properties['capability'],
+                                                                        protectDetectRVInherent[iteration],
+                                                                        protectDetectRVResidual[iteration],
+                                                                        exploitabilityRV[iteration],
+                                                                        movement_RV[iteration], coeffs)
 
                 if nextNode is not None:
 
@@ -574,8 +650,8 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
 
                     else:
                         logger.debug('   Next hop enabled (I) ...')
-                        initialAccess = False
-                        currentNode = nextNode.network_label
+                        initial_access = False
+                        currentNode = nextNode  # .label
 
                         if residualAccess is False and doResidual:
                             logger.debug(
@@ -583,11 +659,11 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                             doResidual = False
                         elif residualAccess is True and doResidual:
                             logger.debug('       Next hop enabled (R) ...')
-                            currentNode = nextNode.network_label
+                            currentNode = nextNode  # .label
 
-                    if currentNode == attackDictElement['destination']:
+                    if currentNode in attackDictElement['destination']:
                         done = True
-                        initialAccess = False
+                        initial_access = False
                         logger.debug(
                             '       Reached target (I)                                             XXX')
                         if residualAccess is True:
@@ -624,15 +700,15 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
                                                                       respondRecoverRVResidual[iteration], nextNode)
                     logger.debug(' Inherent Impact: ' + str(round(residualImpact, 2)))
                     residualImpact = 0.
-                nextNode.manifest['riskR'][iteration] = probability_scale_factor * residualImpact
-                nextNode.manifest['riskI'][iteration] = probability_scale_factor * inherentImpact
-                nextNode.manifest['impactR'][iteration] = residualImpact
-                nextNode.manifest['impactI'][iteration] = inherentImpact
-                nextNode.manifest['accessR'][iteration] = residualAccess
-                nextNode.manifest['accessI'][iteration] = inherentAccess
+                nextNode.assets[0].manifest['riskR'][iteration] = probability_scale_factor * residualImpact
+                nextNode.assets[0].manifest['riskI'][iteration] = probability_scale_factor * inherentImpact
+                nextNode.assets[0].manifest['impactR'][iteration] = residualImpact
+                nextNode.assets[0].manifest['impactI'][iteration] = inherentImpact
+                nextNode.assets[0].manifest['accessR'][iteration] = residualAccess
+                nextNode.assets[0].manifest['accessI'][iteration] = inherentAccess
 
     # Collect MCS results to calculate the outputs we want (for the single enterprise node)
-    for a in allEntitiesList:
+    for a in all_entities.list:
         a.lhR_vec = probability_scale_factor * a.manifest['accessR']
         a.lhI_vec = probability_scale_factor * a.manifest['accessI']
         a.impR_vec = a.manifest['impactR']
@@ -699,7 +775,7 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
         a.riskI = np.mean(a.riskI_vec)
         a.riskR = np.mean(a.riskR_vec)
 
-        if a.uuid == enterprise.uuid:
+        if True:  # a.uuid == enterprise.uuid:
             # SPM diagnostics
             print("lhI = " + str(np.round(a.lhI, 4)))
             print("impI = " + str(np.round(a.impI, 4)))
