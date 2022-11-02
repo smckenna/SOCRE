@@ -159,7 +159,7 @@ def determine_impact(impact_control_inherent, impact_control_residual, entity):
     :param entity: entity object
     :return: A pair of impact values (inherent, residual)
     """
-    inherentImpact = entity.assets[0].value * (1 - impact_control_inherent)
+    inherentImpact = entity.assets[0].value * (1 - impact_control_inherent)  # TODO this [0] is temporary
     residualImpact = entity.assets[0].value * (1 - impact_control_residual)
 
     return inherentImpact, residualImpact
