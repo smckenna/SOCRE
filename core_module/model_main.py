@@ -415,18 +415,18 @@ def run_cyrce(mode, cyrce_input, graph_model_file, bbn_file):
     for mg in ng1.machine_groups:
         for a in mg.assets:
             ng1.assets.append(a)
-            a.machine_group = mg
-            a.network_group = ng1
+            a.machine_group = mg.label
+            a.network_group = ng1.label
 #    for mg in ng2.machine_groups:
 #        for a in mg.assets:
 #            ng2.assets.append(a)
-#            a.machine_group = mg
-#            a.network_group = ng2
+#            a.machine_group = mg.label
+#            a.network_group = ng2.label
 #    for mg in ng3.machine_groups:
 #        for a in mg.assets:
 #            ng3.assets.append(a)
-#            a.machine_group = mg
-#            a.network_group = ng3
+#            a.machine_group = mg.label
+#            a.network_group = ng3.label
 
     # Handle and set up attack target(s)
     attack_mg_target = []
