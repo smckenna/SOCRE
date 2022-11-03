@@ -1,5 +1,4 @@
 import logging
-import random
 
 import numpy as np
 from netaddr import *
@@ -45,7 +44,7 @@ class Network(object):
         to_mg = None
         ct = 0
         while ct < 3:  # TODO what should this be?
-            p = random.choice(all_paths)
+            p = np.random.choice(all_paths)
             path = [n for n in p if n != 'hub']
             if len(path) == 1:
                 ng = path[0]
