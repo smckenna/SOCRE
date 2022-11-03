@@ -2,8 +2,6 @@
 Cyber Risk Computational Engine - CyCRE
 """
 
-import logging
-
 import pandas as pd
 from scipy import interpolate
 from scipy.stats import poisson
@@ -14,7 +12,6 @@ from config import INPUTS
 from entity_module.Entity import *
 from threat_module.ThreatActor import ThreatActor
 from scenario_module import ScenarioModel
-from environment_module.groups import *
 from environment_module.network import *
 from helpers.helper_functions import get_confidence_interval, flatten_list, generate_pert_random_variables, generate_uniform_random_variables
 from collections import OrderedDict
@@ -279,29 +276,17 @@ def run_cyrce(control_mode, cyrce_input):
     # Compute total impact from direct and indirect
     impactValue, directImpactValue, indirectImpactValue = compute_impact_values(cyrce_input, impactCalcMode)
 
-    # Set up entities
-    # Manual here, for now
+    # Set up entities; at this stage, just assets
     all_entities = AllEntities()
+    asset_group = EntityGroup("assets")
     df = pd.read_csv(INPUTS['assets_file'])
     for idx, row in df.iterrows():
-        if row['type'] == 'critical_server':
-            entity = CriticalServer(label=row['label'])
-            entity.value = impactValue * row['value']
-            entity.ip_address = row['ip']
-            entity.os = row['os']
-            all_entities.list.append(entity)
-        elif row['type'] == 'server':
-            entity = Server(label=row['label'])
-            entity.value = impactValue * row['value']
-            entity.ip_address = row['ip']
-            entity.os = row['os']
-            all_entities.list.append(entity)
-        elif row['type'] == 'desktop':
-            entity = Desktop(label=row['label'])
-            entity.value = impactValue * row['value']
-            entity.ip_address = row['ip']
-            entity.os = row['os']
-            all_entities.list.append(entity)
+        entity = Entity(label=row['label'], type=row['type'], critical=bool(row['critical']))
+        entity.value = impactValue * row['value']
+        entity.assign_properties('ip_address', row['ip'])
+        entity.assign_properties('os', row['os'])
+        all_entities.list.append(entity)
+        asset_group.add_entity([entity])
 
     # Set up threat actor
     threat_actor = ThreatActor(type=cyrce_input.scenario.attackThreatType)
@@ -311,7 +296,8 @@ def run_cyrce(control_mode, cyrce_input):
     threat_actor.set_attempt_limit()
     threat_actor.set_capability(cyrce_input)
 
-    # Assign control values to each entity # TODO controls should not be tied to entity; but will go with an entity
+    # Assign control values to each entity
+    # TODO controls should not be tied to entity; but will go with an entity
     for a in all_entities.list:
         if control_mode == 'csf':
             a.controls['csf']['identify']['value'] = cyrce_input.csf.identify.value
@@ -700,7 +686,7 @@ def run_cyrce(control_mode, cyrce_input):
             print("impI = " + str(np.round(a.impI, 4)))
             print("riskI = " + str(np.round(a.riskI, 4)))
             print("riskI_CI = " + str(np.round(a.risk_confIntI, 4)))
-            print("riskLevelI = " + str(np.round(a.riskLevelI, 1)))
+            print("riskLevelI = " + str(np.round(a.riskLevelI, 2)))
             print("riskLevelI_CI = " + str(np.round(a.riskLevel_confIntI, 2)))
             print("--------------------------------")
 

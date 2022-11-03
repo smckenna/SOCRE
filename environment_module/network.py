@@ -123,7 +123,7 @@ class Network(object):
 
             asset.network_group = ""
 
-            entry = asset.ip_address
+            entry = asset.properties['ip_address']
             asset_ip_addresses = parse_ip_ranges(entry)
 
             for ng in self.list_of_network_groups:
@@ -167,7 +167,7 @@ class Network(object):
                 continue
 
             if len(ng.assets) > 0:
-                unique_os = list(set([a.os for a in ng.assets]))
+                unique_os = list(set([a.properties['os'] for a in ng.assets]))
                 if len(unique_os) == 0:
                     continue
             else:
@@ -177,7 +177,7 @@ class Network(object):
             logger.info("      Assigning assets to machine groups within " + ng.label)
             asset_count = 0
             for os in unique_os:
-                mg_assets = list(set([a for a in ng.assets if a.os == os]))
+                mg_assets = list(set([a for a in ng.assets if a.properties['os'] == os]))
 
                 asset_count += len(mg_assets)
                 if len(mg_assets) > 0:

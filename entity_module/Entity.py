@@ -1,5 +1,25 @@
 from uuid import uuid4
 import numpy as np
+from helpers.helper_functions import flatten_list
+
+"""
+self.type = 'critical_entity'
+self.type = 'organization'
+self.type = 'process'
+self.type = 'organization'
+self.type = 'application'
+self.type = 'product'
+self.type = 'function'
+self.type = 'asset'
+self.type = 'server'
+self.type = 'critical_server'
+self.type = 'laptop'
+self.type = 'desktop'
+self.type = 'mobile_device'
+self.type = 'virtual_machine'
+self.type = 'cloud_object'
+self.type = 'cloud_database'
+"""
 
 
 class AllEntities(object):
@@ -15,17 +35,17 @@ class AllEntities(object):
 
 
 class Entity(object):
-    # TODO programmatically create entity classes?
-    def __init__(self, label="", owner=None):
+    def __init__(self, label="default", type="asset", critical=False):
         self.uuid = uuid4()
         self.value = 0
-        self.type = ''
+        self.type = type
         self.label = label
-        self.network_label = label.lower().replace(' ', '_')
-        self.owner = owner
+        self.owner = None
         self.properties = dict()
-        self.data = {}
         self.manifest = {}
+        self.critical = critical
+        self.machine_group = None
+        self.network_group = None
         self.controls = {'csf': {
             "identify": {
                 "value": 0.5,
@@ -506,175 +526,81 @@ class Entity(object):
         for k in keys:
             self.manifest[k] = np.zeros((size,))
 
+    def assign_owner(self, owner):
+        self.owner = owner
 
-class CriticalEntity(Entity):
-
-    def __init__(self, label="", owner=None):
-        super().__init__(label=label, owner=owner)
-        self.type = 'critical_entity'
-
-
-class Organization(Entity):
-
-    def __init__(self, label="", owner=None):
-        super().__init__(label=label, owner=owner)
-        self.type = 'organization'
-
-
-class Process(Entity):
-
-    def __init__(self, label="", owner=None):
-        super().__init__(label=label, owner=owner)
-        self.type = 'process'
-
-
-class Division(Entity):
-
-    def __init__(self, label="", owner=None):
-        super().__init__(label=label, owner=owner)
-        self.type = 'organization'
-
-
-class Application(Entity):
-
-    def __init__(self, label="", owner=None):
-        super().__init__(label=label, owner=owner)
-        self.type = 'application'
-
-
-class Product(Entity):
-
-    def __init__(self, label="", owner=None):
-        super().__init__(label=label, owner=owner)
-        self.type = 'product'
-
-
-class Function(Entity):
-
-    def __init__(self, label="", owner=None):
-        super().__init__(label=label, owner=owner)
-        self.type = 'function'
-
-
-class Asset(Entity):
-
-    def __init__(self, label="", owner=None, ip_address='0.0.0.0', operating_system='linux'):
-        super().__init__(label=label, owner=owner)
-        self.ip_address = ip_address
-        self.os = operating_system
-        self.type = 'asset'
-        self.machine_group = None
-        self.network_group = None
-
-
-class Server(Asset):
-
-    def __init__(self, label="", owner=None):
-        super().__init__(label=label, owner=owner)
-        self.type = 'server'
-
-
-class CriticalServer(Asset):
-
-    def __init__(self, label="", owner=None):
-        super().__init__(label=label, owner=owner)
-        self.type = 'critical_server'
-
-
-class Laptop(Asset):
-
-    def __init__(self, label="", owner=None, operating_system="windows"):
-        super().__init__(label=label, owner=owner)
-        self.os = operating_system
-        self.type = 'laptop'
-
-
-class Desktop(Asset):
-
-    def __init__(self, label="", owner=None):
-        super().__init__(label=label, owner=owner)
-        self.type = 'desktop'
-
-
-class MobileDevice(Asset):
-
-    def __init__(self, label="", owner=None):
-        super().__init__(label=label, owner=owner)
-        self.type = 'mobile_device'
-
-
-class VirtualMachine(Asset):
-
-    def __init__(self, label="", owner=None):
-        super().__init__(label=label, owner=owner)
-        self.type = 'virtual_machine'
-
-
-class CloudObject(Entity):
-
-    def __init__(self, label="", owner=None, provider='aws'):
-        super().__init__(label=label, owner=owner)
-        self.provider = provider
-        self.type = 'cloud_object'
-
-
-class CloudDataBase(CloudObject):
-
-    def __init__(self, label="", owner=None):
-        super().__init__(label=label, owner=owner)
-        self.type = 'cloud_database'
+    def assign_properties(self, prop, val):
+        self.properties[prop] = val
+        # ip
+        # data?
+        # os
+        # cloud provider
 
 
 class Data:
 
-    def __init__(self, label="", owner=None):
+    def __init__(self, label="default", critical=False):
         self.uuid = uuid4()
         self.value = {}
         self.label = label
-        self.owner = owner
         self.properties = dict()
-        self.data = {}
-        self.type = 'data'
+        self.owner = None
+
+    def assign_owner(self, owner):
+        self.owner = owner
+
+    def assign_properties(self, prop, val):
+        self.properties[prop] = val
 
 
 class EntityGroup:
 
-    def __init__(self, list_of_entities, label, owner):
-        self.list_of_entities = list_of_entities
+    def __init__(self, label="default", critical=False):
+        self.list_of_entities = []
         self.uuid = uuid4()
         self.value = {}
         self.label = label
-        self.owner = owner
+        self.owner = None
         self.properties = dict()
-        self.data = {}
+        self.critical = critical
+
+    def add_entity(self, entity_list):
+        self.list_of_entities = self.list_of_entities + entity_list
+#        self.list_of_entities = flatten_list(self.list_of_entities)
+
+    def assign_properties(self, prop, val):
+        self.properties[prop] = val
 
 
 class DataGroup:
 
-    def __init__(self, list_of_data, label, owner):
-        self.list_of_data = list_of_data
+    def __init__(self, label='default', critical=False):
+        self.list_of_data = []
         self.uuid = uuid4()
         self.value = 0
         self.label = label
-        self.owner = owner
         self.properties = dict()
-        self.data = {}
+        self.critical = critical
+
+    def add_data(self, data_list):
+        self.list_of_data.append(data_list)
+        self.list_of_data = flatten_list(self.list_of_data)
 
 
 if __name__ == '__main__':
-    acme = Organization(label="ACME", owner=None)
+    acme = Entity(type='organization', label="ACME")
     all_entities = AllEntities()
     all_entities.add_to_all_entities(acme)
 
-    app1 = Application(owner="Jane", label="Payroll")
+    app1 = Entity(type='application', label='Payroll')
     all_entities.add_to_all_entities(app1)
 
-    svr1 = Server(owner="Jane", label="Mainframe")
-    svr2 = Server(owner="Steve", label="Print server")
-    laptop1 = Laptop(owner="Hank", label="Employee machine", operating_system="linux")
-    laptop2 = Laptop(owner="Sue", label="Employee machine")
-    laptop3 = Laptop(owner="Bill", label="Employee machine")
-    laptop4 = Laptop(owner="Mary", label="Employee machine")
+    svr1 = Entity(type='server', label="Mainframe")
+    svr2 = Entity(type='server', label="Print server")
+    laptop1 = Entity(type='laptop', label="Employee 1 machine")
+    laptop2 = Entity(type='laptop', label="Employee 2 machine")
+    laptop3 = Entity(type='laptop', label="Employee 3 machine")
+    laptop4 = Entity(type='laptop', label="Employee 4 machine")
     all_entities.add_to_all_entities(svr1)
     all_entities.add_to_all_entities(svr2)
     all_entities.add_to_all_entities(laptop1)
@@ -682,12 +608,12 @@ if __name__ == '__main__':
     all_entities.add_to_all_entities(laptop3)
     all_entities.add_to_all_entities(laptop4)
 
-    div1 = Division(label="Operations", owner="SVP1")
-    div2 = Division(label="Sales", owner="SVP2")
+    div1 = Entity(type='division', label="Operations")
+    div2 = Entity(type='division', label="Sales")
     all_entities.add_to_all_entities(div1)
     all_entities.add_to_all_entities(div2)
 
-    all_laptops = EntityGroup(list_of_entities=[laptop1, laptop2, laptop3, laptop4],
-                              label="all laptops", owner=None)
-    my_db = CloudDataBase("cloud db", "me")
-    db_records = Data(label="Database Records", owner="Sue")
+    all_laptops = EntityGroup(label="all laptops")
+    all_laptops.add_entity([laptop1, laptop2, laptop3, laptop4])
+    my_db = Entity(type='cloud_database')
+    db_records = Data(label="Database Records")
