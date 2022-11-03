@@ -2,21 +2,24 @@
 Cyber Risk Computational Engine - CyCRE
 """
 
+import os
+import platform
+from collections import OrderedDict
+
+import networkx as nx
+import numpy as np
 import pandas as pd
 from scipy import interpolate
 from scipy.stats import poisson
-import networkx as nx
-import os
-from output_module.cyrce_output import CyrceOutput, ValueVar
+
 from config import INPUTS
 from entity_module.Entity import *
-from threat_module.ThreatActor import ThreatActor
-from scenario_module import ScenarioModel
 from environment_module.network import *
-from helpers.helper_functions import get_confidence_interval, flatten_list, generate_pert_random_variables, generate_uniform_random_variables
-from collections import OrderedDict
-import numpy as np
-import platform
+from helpers.helper_functions import get_confidence_interval, flatten_list, generate_pert_random_variables, \
+    generate_uniform_random_variables
+from output_module.cyrce_output import CyrceOutput, ValueVar
+from scenario_module import ScenarioModel
+from threat_module.ThreatActor import ThreatActor
 
 
 def compute_tac_v_control_prob(vuln, tac, coeffs):
@@ -490,14 +493,16 @@ def run_cyrce(control_mode, cyrce_input):
                     nextNode = network_model.from_node_to_node(from_node=attackDictElement['origin'],
                                                                objective_list=attackDictElement['entryPoint'],
                                                                network_model=network_model,
-                                                               failed_node_list=failedNodeList)
+                                                               failed_node_list=failedNodeList,
+                                                               random_seed=INPUTS['random_seed'])
                     if nextNode is not None:
                         logger.debug(' ' + attackDictElement['origin'] + ' ---?--> ' + nextNode.label)
                 else:
                     nextNode = network_model.from_node_to_node(from_node=currentNode.network_group,
                                                                objective_list=attackDictElement['destination'],
                                                                network_model=network_model,
-                                                               failed_node_list=failedNodeList)
+                                                               failed_node_list=failedNodeList,
+                                                               random_seed=INPUTS['random_seed'])
                     if nextNode is not None:
                         logger.debug(currentNode.label + ' --?--> ' + nextNode.label)
 
