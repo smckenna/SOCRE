@@ -2,21 +2,24 @@
 Cyber Risk Computational Engine - CyCRE
 """
 
+import os
+import platform
+from collections import OrderedDict
+
+import networkx as nx
+import numpy as np
 import pandas as pd
 from scipy import interpolate
 from scipy.stats import poisson
-import networkx as nx
-import os
-from output_module.cyrce_output import CyrceOutput, ValueVar
+
 from config import INPUTS
 from entity_module.Entity import *
-from threat_module.ThreatActor import ThreatActor
-from scenario_module import ScenarioModel
 from environment_module.network import *
-from helpers.helper_functions import get_confidence_interval, flatten_list, generate_pert_random_variables, generate_uniform_random_variables
-from collections import OrderedDict
-import numpy as np
-import platform
+from helpers.helper_functions import get_confidence_interval, flatten_list, generate_pert_random_variables, \
+    generate_uniform_random_variables
+from output_module.cyrce_output import CyrceOutput, ValueVar
+from scenario_module import ScenarioModel
+from threat_module.ThreatActor import ThreatActor
 
 
 def compute_tac_v_control_prob(vuln, tac, coeffs):
@@ -36,7 +39,7 @@ def compute_tac_v_control_prob(vuln, tac, coeffs):
            p12 * x * y ** 2 + p03 * y ** 3
 
 
-def determine_initial_access(tac, ia_control_inherent, ia_control_residual, vuln, ia_RV, coeffs):
+def determine_initial_access(tac, ia_control, vuln, ia_RV, coeffs):
     # TODO these could be done "once" outside loop
     """
     Determine "initial access" (ATT&CK Recon, Resource Dev, Initial Access) success or failure
@@ -48,33 +51,21 @@ def determine_initial_access(tac, ia_control_inherent, ia_control_residual, vuln
     :param coeffs: threat actor capability versus Control Effectiveness fit coefficients
     :return: A pair of booleans (inherent, residual), with True for success, False for fail
     """
-    inherent_vuln = vuln * (1 - ia_control_inherent)
-    residual_vuln = vuln * (1 - ia_control_residual)
-    prob = compute_tac_v_control_prob(inherent_vuln, tac, coeffs)
-    if prob < 0:
-        prob = 0.
-    elif prob > 1:
-        prob = 1.
-
-    if ia_RV <= prob:
-        inherent_result = True
-    else:
-        inherent_result = False
-
-    prob = compute_tac_v_control_prob(residual_vuln, tac, coeffs)
+    vuln = vuln * (1 - ia_control)
+    prob = compute_tac_v_control_prob(vuln, tac, coeffs)
     if prob < 0:
         prob = 0.
     elif prob > 1:
         prob = 1.
     if ia_RV <= prob:
-        residual_result = True
+        result = True
     else:
-        residual_result = False
+        result = False
 
-    return inherent_result, residual_result
+    return result
 
 
-def determine_execution(tac, exec_control_inherent, exec_control_resdiual, exploitability, execution_RV, coeffs):
+def determine_execution(tac, exec_control, exploitability, execution_RV, coeffs):
     """
     Determine "execution" (ATT&CK Execution, Persistence, Priv Escalation, Defensive Evasion, Cred Access, Discovery,
         Collection) success or failure
@@ -86,32 +77,21 @@ def determine_execution(tac, exec_control_inherent, exec_control_resdiual, explo
     :param coeffs: threat actor capability versus Control Effectiveness fit coefficients
     :return: A pair of booleans (inherent, residual), with True for success, False for fail
     """
-    inherent_expl = exploitability * (1 - exec_control_inherent)
-    residual_expl = exploitability * (1 - exec_control_resdiual)
-    prob = compute_tac_v_control_prob(inherent_expl, tac, coeffs)
+    expl = exploitability * (1 - exec_control)
+    prob = compute_tac_v_control_prob(expl, tac, coeffs)
     if prob < 0:
         prob = 0.
     elif prob > 1:
         prob = 1.
     if execution_RV <= prob:
-        inherent_result = True
+        result = True
     else:
-        inherent_result = False
+        result = False
 
-    prob = compute_tac_v_control_prob(residual_expl, tac, coeffs)
-    if prob < 0:
-        prob = 0.
-    elif prob > 1:
-        prob = 1.
-    if execution_RV <= prob:
-        residual_result = True
-    else:
-        residual_result = False
-
-    return inherent_result, residual_result
+    return result
 
 
-def determine_movement(tac, movement_control_inherent, movement_control_resdiual, exploitability, movement_RV, coeffs):
+def determine_movement(tac, movement_control, exploitability, movement_RV, coeffs):
     """
     Determine "movement" (ATT&CK Lateral Movement) success or failure
     :param tac: threat actor capability
@@ -122,32 +102,21 @@ def determine_movement(tac, movement_control_inherent, movement_control_resdiual
     :param coeffs: threat actor capability versus Control Effectiveness fit coefficients
     :return: A pair of booleans (inherent, residual), with True for success, False for fail
     """
-    inherent_expl = exploitability * (1 - movement_control_inherent)
-    residual_expl = exploitability * (1 - movement_control_resdiual)
-    prob = compute_tac_v_control_prob(inherent_expl, tac, coeffs)
+    expl = exploitability * (1 - movement_control)
+    prob = compute_tac_v_control_prob(expl, tac, coeffs)
     if prob < 0:
         prob = 0.
     elif prob > 1:
         prob = 1.
     if movement_RV <= prob:
-        inherent_result = True
+        result = True
     else:
-        inherent_result = False
+        result = False
 
-    prob = compute_tac_v_control_prob(residual_expl, tac, coeffs)
-    if prob < 0:
-        prob = 0.
-    elif prob > 1:
-        prob = 1.
-    if movement_RV <= prob:
-        residual_result = True
-    else:
-        residual_result = False
-
-    return inherent_result, residual_result
+    return result
 
 
-def determine_impact(impact_control_inherent, impact_control_residual, entity):
+def determine_impact(impact_control, entity):
     """
     Determine "impact" (ATT&CK C&C, Exfil, Impact) success or failure
     I = (1 - RR) * VAL
@@ -156,10 +125,9 @@ def determine_impact(impact_control_inherent, impact_control_residual, entity):
     :param entity: entity object
     :return: A pair of impact values (inherent, residual)
     """
-    inherentImpact = entity.assets[0].value * (1 - impact_control_inherent)  # TODO this [0] is temporary
-    residualImpact = entity.assets[0].value * (1 - impact_control_residual)
+    impact = entity.assets[0].value * (1 - impact_control)  # TODO this [0] is temporary
 
-    return inherentImpact, residualImpact
+    return impact
 
 
 def compute_impact_values(cyrce_input, impactCalcMode='mean'):
@@ -309,7 +277,7 @@ def run_cyrce(control_mode, cyrce_input):
             a.controls['sp80053']['AT'] = cyrce_input.sp80053.AT
             a.controls['sp80053']['RA'] = cyrce_input.sp80053.RA
 
-        a.allocate_data_space(['impactI', 'impactR', 'accessI', 'accessR', 'riskI', 'riskR'], numberOfMonteCarloRuns)
+        a.allocate_data_space(['impact', 'access', 'risk'], numberOfMonteCarloRuns)
 
     # Use this metadata to set scale factor on likelihood of attack
     attackAction = cyrce_input.scenario.attackAction
@@ -448,24 +416,24 @@ def run_cyrce(control_mode, cyrce_input):
     respondRecoverRVResidual = np.divide(np.add(respondRVResidual, recoverRVResidual), 2)
 
     """
-    ******************************************
-    MC loop begins for inherent and residual *
-    ******************************************
+    ********************
+    *  MC loop begins  *
+    ********************
     Each iteration is a single attack
     A single attack may have multiple attempts, though, based on the TA attempt_limit
     """
-
+    protectDetectRV = protectDetectRVResidual
+    respondRecoverRV = respondRecoverRVResidual
     for iteration in range(0, numberOfMonteCarloRuns):
 
-        tryCountI, tryCountR = 1, 1
+        tryCount = 1
         origin = 'internet'
         destination = attack_mg_target
-        entryNode = attack_mg_target  # [mg_servers]
+        entryNode = attack_mg_target
 
         initial_access = True
         currentNode = None
         failedNodeList = []
-        doResidual = True
 
         logger.debug(' -----------------')
         logger.debug(' Iteration: ' + str(iteration))
@@ -476,235 +444,155 @@ def run_cyrce(control_mode, cyrce_input):
         attackDict[iteration]['origin'] = origin
         attackDict[iteration]['destination'] = destination
         attackDict[iteration]['entryPoint'] = entryNode
-        attackDict[iteration]['sequenceI'] = [origin]
-        attackDict[iteration]['sequenceR'] = [origin]
+        attackDict[iteration]['sequence'] = [origin]
 
         attackDictElement = attackDict[iteration]
         done = False
 
         while not done:
 
-            while tryCountI <= threat_actor.attempt_limit:  # tryCountI should always be < tryCountR
+            while tryCount <= threat_actor.attempt_limit:
 
                 if initial_access:
                     nextNode = network_model.from_node_to_node(from_node=attackDictElement['origin'],
                                                                objective_list=attackDictElement['entryPoint'],
                                                                network_model=network_model,
-                                                               failed_node_list=failedNodeList)
+                                                               failed_node_list=failedNodeList,
+                                                               random_state=INPUTS['random_seed'])
                     if nextNode is not None:
                         logger.debug(' ' + attackDictElement['origin'] + ' ---?--> ' + nextNode.label)
                 else:
                     nextNode = network_model.from_node_to_node(from_node=currentNode.network_group,
                                                                objective_list=attackDictElement['destination'],
                                                                network_model=network_model,
-                                                               failed_node_list=failedNodeList)
+                                                               failed_node_list=failedNodeList,
+                                                               random_state=INPUTS['random_seed'])
                     if nextNode is not None:
                         logger.debug(currentNode.label + ' --?--> ' + nextNode.label)
 
                 if nextNode is None:
-                    tryCountI += 1
-                    tryCountR += 1
+                    tryCount += 1
                     failedNodeList.append(nextNode)
-                    if tryCountI > threat_actor.attempt_limit:
-                        logger.debug('   End of path reached (I/R), attacker giving up')
+                    if tryCount > threat_actor.attempt_limit:
+                        logger.debug('   End of path reached, attacker giving up')
                         done = True
                         break
                     else:
-                        logger.debug('   End of path reached (I), attacker trying again')
-                    if doResidual:
-                        if tryCountR > threat_actor.attempt_limit:
-                            logger.debug('   End of path reached (R), attacker giving up')
-                            doResidual = False
-                        elif doResidual:
-                            logger.debug('   End of path reached (R), attacker trying again')
-                        else:
-                            logger.debug('   End of path reached (R), residual attack ends')
-                        continue
+                        logger.debug('   End of path reached, attacker trying again')
 
                 # Determine if threat actor gains INITIAL ACCESS
                 if initial_access:
-                    inherentAccess, residualAccess = determine_initial_access(threat_actor.properties['capability'],
-                                                                              protectDetectRVInherent[iteration],
-                                                                              protectDetectRVResidual[iteration],
-                                                                              vulnerabilityRV[iteration],
-                                                                              initial_access_RV[iteration], coeffs)
+                    access = determine_initial_access(threat_actor.properties['capability'],
+                                                      protectDetectRV[iteration],
+                                                      vulnerabilityRV[iteration],
+                                                      initial_access_RV[iteration], coeffs)
                 else:  # Determine if threat actor moves to next node
-                    inherentAccess, residualAccess = determine_movement(threat_actor.properties['capability'],
-                                                                        protectDetectRVInherent[iteration],
-                                                                        protectDetectRVResidual[iteration],
-                                                                        exploitabilityRV[iteration],
-                                                                        movement_RV[iteration], coeffs)
+                    access = determine_movement(threat_actor.properties['capability'],
+                                                protectDetectRV[iteration],
+                                                exploitabilityRV[iteration],
+                                                movement_RV[iteration], coeffs)
 
                 if nextNode is not None:
-
-                    if inherentAccess is False:  # residualAccess should also be False
-                        tryCountI += 1
-                        tryCountR += 1
+                    if access is False:
+                        tryCount += 1
                         failedNodeList.append(nextNode)
-                        if tryCountI > threat_actor.attempt_limit:
-                            logger.debug('   Failed (I/R), attacker giving up - too many tries')
+                        if tryCount > threat_actor.attempt_limit:
+                            logger.debug('   Failed, attacker giving up - too many tries')
                             done = True
                             break
                         else:
-                            logger.debug('   Failed (I), trying again')
-                        if tryCountR > threat_actor.attempt_limit and doResidual:
-                            logger.debug('   Failed (R), residual attack ends - too many tries')
-                            doResidual = False
-                        elif doResidual:  # both False
-                            logger.debug('   Failed (R), but trying again since inherent also failed')
-
+                            logger.debug('   Failed, trying again')
                     else:
-                        logger.debug('    Next hop enabled (I) ...')
+                        logger.debug('    Next hop enabled ...')
                         initial_access = False
-                        currentNode = nextNode  # .label
-
-                        if residualAccess is False and doResidual:
-                            logger.debug(
-                                '   Failed (R), residual attack ends since inherent succeeded')
-                            doResidual = False
-                        elif residualAccess is True and doResidual:
-                            logger.debug('    Next hop enabled (R) ...')
-                            currentNode = nextNode  # .label
+                        currentNode = nextNode
 
                     if currentNode in attackDictElement['destination']:
                         done = True
                         initial_access = False
-                        logger.debug(
-                            '       Reached target (I)                                             XXX')
-                        if residualAccess is True:
-                            logger.debug(
-                                '       Reached target (R)                                             ^^^')
+                        logger.debug('       Reached target                                             XXX')
                         break
 
-            if tryCountI > threat_actor.attempt_limit:
+            if tryCount > threat_actor.attempt_limit:
                 done = True
 
             if nextNode is not None:
-                inherentExecution, residualExecution = determine_execution(threat_actor.properties['capability'],
-                                                                           protectDetectRVInherent[iteration],
-                                                                           protectDetectRVResidual[iteration],
-                                                                           exploitabilityRV[iteration],
-                                                                           execution_RV[iteration], coeffs)
+                execution = determine_execution(threat_actor.properties['capability'],
+                                                protectDetectRV[iteration],
+                                                exploitabilityRV[iteration],
+                                                execution_RV[iteration], coeffs)
 
-                logger.debug('          Execution success? (I): ' + str(inherentExecution))
-                logger.debug('          Execution success? (R): ' + str(residualExecution))
-                inherentImpact = 0.
-                residualImpact = 0.
-                inherentAccess = 0.
-                residualAccess = 0.
-                if residualExecution:
-                    residualAccess = 1.
-                    inherentAccess = 1.
-                    inherentImpact, residualImpact = determine_impact(respondRecoverRVInherent[iteration],
-                                                                      respondRecoverRVResidual[iteration], nextNode)
-                    logger.debug('             Inherent Impact: ' + str(round(inherentImpact, 2)))
-                    logger.debug('             Residual Impact: ' + str(round(residualImpact, 2)))
-                elif inherentExecution:
-                    inherentAccess = 1.
-                    inherentImpact, residualImpact = determine_impact(respondRecoverRVInherent[iteration],
-                                                                      respondRecoverRVResidual[iteration], nextNode)
-                    logger.debug('             Inherent Impact: ' + str(round(residualImpact, 2)))
-                    residualImpact = 0.
-                nextNode.assets[0].manifest['riskR'][iteration] = probability_scale_factor * residualImpact
-                nextNode.assets[0].manifest['riskI'][iteration] = probability_scale_factor * inherentImpact
-                nextNode.assets[0].manifest['impactR'][iteration] = residualImpact
-                nextNode.assets[0].manifest['impactI'][iteration] = inherentImpact
-                nextNode.assets[0].manifest['accessR'][iteration] = residualAccess
-                nextNode.assets[0].manifest['accessI'][iteration] = inherentAccess
+                logger.debug('          Execution success?: ' + str(execution))
+                impact = 0.
+                access = 0.
+                if execution:
+                    access = 1.
+                    impact = determine_impact(respondRecoverRV[iteration], nextNode)
+                    logger.debug('             Impact: ' + str(round(impact, 2)))
+                nextNode.assets[0].manifest['risk'][iteration] = probability_scale_factor * impact
+                nextNode.assets[0].manifest['impact'][iteration] = impact
+                nextNode.assets[0].manifest['access'][iteration] = access
 
     # Collect MCS results to calculate the outputs we want (for the single enterprise node)
     for a in all_entities.list:
-        a.lhR_vec = probability_scale_factor * a.manifest['accessR']
-        a.lhI_vec = probability_scale_factor * a.manifest['accessI']
-        a.impR_vec = a.manifest['impactR']
-        a.impI_vec = a.manifest['impactI']
-        a.riskI_vec = np.multiply(a.lhI_vec, a.impI_vec)
-        a.riskR_vec = np.multiply(a.lhR_vec, a.impR_vec)
+        a.lh_vec = probability_scale_factor * a.manifest['access']
+        a.imp_vec = a.manifest['impact']
+        a.risk_vec = np.multiply(a.lh_vec, a.imp_vec)
 
         # Computing confidence intervals
-        a.LH_confIntI = get_confidence_interval(a.lhI_vec, alpha=INPUTS['confidenceAlpha'])
-        a.LH_confIntR = get_confidence_interval(a.lhR_vec, alpha=INPUTS['confidenceAlpha'])
-        a.imp_confIntI = get_confidence_interval(a.impI_vec[a.manifest['accessI'] == 1],
-                                                 alpha=INPUTS['confidenceAlpha'])
-        a.imp_confIntR = get_confidence_interval(a.impR_vec[a.manifest['accessR'] == 1],
-                                                 alpha=INPUTS['confidenceAlpha'])
-        a.risk_confIntI = get_confidence_interval(a.riskI_vec, alpha=INPUTS['confidenceAlpha'])
-        a.risk_confIntR = get_confidence_interval(a.riskR_vec, alpha=INPUTS['confidenceAlpha'])
+        a.LH_confInt = get_confidence_interval(a.lh_vec, alpha=INPUTS['confidenceAlpha'])
+        a.imp_confInt = get_confidence_interval(a.imp_vec[a.manifest['access'] == 1],
+                                                alpha=INPUTS['confidenceAlpha'])
+        a.risk_confInt = get_confidence_interval(a.risk_vec, alpha=INPUTS['confidenceAlpha'])
         if INPUTS['scoring_lambda'] == 0:
-            tmpRiskTransformedI_vec = np.log(a.riskI_vec + 1e-10)
-            tmpRiskTransformedR_vec = np.log(a.riskR_vec + 1e-10)
+            tmpRiskTransformed_vec = np.log(a.risk_vec + 1e-10)
         else:
-            tmpRiskTransformedI_vec = np.power(a.riskI_vec, INPUTS['scoring_lambda'])
-            tmpRiskTransformedR_vec = np.power(a.riskR_vec, INPUTS['scoring_lambda'])
+            tmpRiskTransformed_vec = np.power(a.risk_vec, INPUTS['scoring_lambda'])
 
-        riskLevelI_vec = INPUTS['scoring_fit'][0] * tmpRiskTransformedI_vec + INPUTS['scoring_fit'][1]
-        riskLevelI_vec[riskLevelI_vec < 0] = 0
-        riskLevelI_vec[riskLevelI_vec > 5] = 5
+        riskLevel_vec = INPUTS['scoring_fit'][0] * tmpRiskTransformed_vec + INPUTS['scoring_fit'][1]
+        riskLevel_vec[riskLevel_vec < 0] = 0
+        riskLevel_vec[riskLevel_vec > 5] = 5
 
-        riskLevelR_vec = INPUTS['scoring_fit'][0] * tmpRiskTransformedR_vec + INPUTS['scoring_fit'][1]
-        riskLevelR_vec[riskLevelR_vec < 0] = 0
-        riskLevelR_vec[riskLevelR_vec > 5] = 5
-
-        a.riskLevel_confIntI = max(min(2.5, get_confidence_interval(riskLevelI_vec[riskLevelI_vec > 0],
-                                                                    alpha=INPUTS['confidenceAlpha'])), 0)
-        a.riskLevel_confIntR = max(min(2.5, get_confidence_interval(riskLevelR_vec[riskLevelR_vec > 0],
-                                                                    alpha=INPUTS['confidenceAlpha'])), 0)
+        a.riskLevel_confInt = max(min(2.5, get_confidence_interval(riskLevel_vec[riskLevel_vec > 0],
+                                                                   alpha=INPUTS['confidenceAlpha'])), 0)
         # Computing variances
-        a.LH_varI = float(np.var(a.lhI_vec))
-        a.LH_varR = float(np.var(a.lhR_vec))
+        a.LH_var = float(np.var(a.lh_vec))
 
-        a.imp_varI = float(np.var(a.impI_vec))
-        a.imp_varR = float(np.var(a.impR_vec))
+        a.imp_var = float(np.var(a.imp_vec))
 
-        a.risk_varI = np.var(a.riskI_vec)
-        a.risk_varR = np.var(a.riskR_vec)
+        a.risk_var = np.var(a.risk_vec)
 
-        a.riskLevel_varI = np.var(riskLevelI_vec)
-        a.riskLevel_varR = np.var(riskLevelR_vec)
+        a.riskLevel_var = np.var(riskLevel_vec)
 
         if INPUTS['scoring_lambda'] == 0:
-            riskTransformedI = np.log(np.mean(a.riskI_vec) + 1e-10)
-            riskTransformedR = np.log(np.mean(a.riskR_vec) + 1e-10)
+            riskTransformed = np.log(np.mean(a.risk_vec) + 1e-10)
         else:
-            riskTransformedI = np.mean(a.riskI_vec) ** INPUTS['scoring_lambda']
-            riskTransformedR = np.mean(a.riskR_vec) ** INPUTS['scoring_lambda']
+            riskTransformed = np.mean(a.risk_vec) ** INPUTS['scoring_lambda']
 
-        a.riskLevelI = max(min(5, INPUTS['scoring_fit'][0] * np.mean(riskTransformedI) + INPUTS['scoring_fit'][1]), 0)
-        a.riskLevelR = max(min(5, INPUTS['scoring_fit'][0] * np.mean(riskTransformedR) + INPUTS['scoring_fit'][1]), 0)
+        a.riskLevel = max(min(5, INPUTS['scoring_fit'][0] * np.mean(riskTransformed) + INPUTS['scoring_fit'][1]), 0)
 
         # Computing means
-        a.lhI = np.mean(a.lhI_vec)
-        a.lhR = np.mean(a.lhR_vec)
-        a.impI = np.mean(a.impI_vec[a.manifest['accessI'] > 0])
-        a.impR = np.mean(a.impR_vec[a.manifest['accessR'] > 0])
-        a.riskI = np.mean(a.riskI_vec)
-        a.riskR = np.mean(a.riskR_vec)
+        a.lh = np.mean(a.lh_vec)
+        a.imp = np.mean(a.imp_vec[a.manifest['access'] > 0])
+        a.risk = np.mean(a.risk_vec)
 
         if True:  # a.uuid == enterprise.uuid:
             # SPM diagnostics
-            print("lhI = " + str(np.round(a.lhI, 4)))
-            print("impI = " + str(np.round(a.impI, 4)))
-            print("riskI = " + str(np.round(a.riskI, 4)))
-            print("riskI_CI = " + str(np.round(a.risk_confIntI, 4)))
-            print("riskLevelI = " + str(np.round(a.riskLevelI, 2)))
-            print("riskLevelI_CI = " + str(np.round(a.riskLevel_confIntI, 2)))
-            print("--------------------------------")
-
-            print("lhR = " + str(np.round(a.lhR, 4)))
-            print("impR = " + str(np.round(a.impR, 4)))
-            print("riskR = " + str(np.round(a.riskR, 4)))
-            print("riskR_CI = " + str(np.round(a.risk_confIntR, 4)))
-            print("riskLevelR = " + str(np.round(a.riskLevelR, 2)))
-            print("riskLevelR_CI = " + str(np.round(a.riskLevel_confIntR, 2)))
+            print("lh = " + str(np.round(a.lh, 4)))
+            print("imp = " + str(np.round(a.imp, 4)))
+            print("risk = " + str(np.round(a.risk, 4)))
+            print("risk_CI = " + str(np.round(a.risk_confInt, 4)))
+            print("riskLevel = " + str(np.round(a.riskLevel, 2)))
+            print("riskLevel_CI = " + str(np.round(a.riskLevel_confInt, 2)))
             print("--------------------------------")
 
             logger.debug('output: ' + str(CyrceOutput(
-                overallInherentLikelihood=ValueVar(float(a.lhI), a.LH_varI, a.LH_confIntI),
-                overallResidualLikelihood=ValueVar(float(a.lhR), a.LH_varR, a.LH_confIntR),
-                overallInherentImpact=ValueVar(float(a.impI), a.imp_varI, a.imp_confIntI),
-                overallResidualImpact=ValueVar(float(a.impR), a.imp_varR, a.imp_confIntR),
-                overallInherentRiskLevel=ValueVar(a.riskLevelI, float(a.riskLevel_varI), a.riskLevel_confIntI),
-                overallResidualRiskLevel=ValueVar(a.riskLevelR, float(a.riskLevel_varR), a.riskLevel_confIntR),
+                overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+                overallResidualLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+                overallInherentImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+                overallResidualImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+                overallInherentRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
+                overallResidualRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
                 attackSurface=float(attackSurface),
                 exploitability=exploitability,
                 vulnerability=vulnerability,
@@ -717,12 +605,12 @@ def run_cyrce(control_mode, cyrce_input):
                 indirectImpact=float(indirectImpactValue))))
 
             return CyrceOutput(
-                overallInherentLikelihood=ValueVar(float(a.lhI), a.LH_varI, a.LH_confIntI),
-                overallResidualLikelihood=ValueVar(float(a.lhR), a.LH_varR, a.LH_confIntR),
-                overallInherentImpact=ValueVar(float(a.impI), a.imp_varI, a.imp_confIntI),
-                overallResidualImpact=ValueVar(float(a.impR), a.imp_varR, a.imp_confIntR),
-                overallInherentRiskLevel=ValueVar(a.riskLevelI, float(a.riskLevel_varI), a.riskLevel_confIntI),
-                overallResidualRiskLevel=ValueVar(a.riskLevelR, float(a.riskLevel_varR), a.riskLevel_confIntR),
+                overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+                overallResidualLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+                overallInherentImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+                overallResidualImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+                overallInherentRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
+                overallResidualRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
                 attackSurface=float(attackSurface),
                 exploitability=exploitability,
                 vulnerability=vulnerability,

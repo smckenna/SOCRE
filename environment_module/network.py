@@ -1,8 +1,11 @@
+import logging
 import random
+
+import numpy as np
+from netaddr import *
+
 from environment_module.groups import NetworkGroup, MachineGroup
 from helpers.helper_functions import parse_ip_ranges
-from netaddr import *
-import logging
 
 
 class Network(object):
@@ -18,7 +21,9 @@ class Network(object):
         self.list_of_network_groups = []
         self.__set_up_network_groups()
 
-    def from_node_to_node(self, from_node, objective_list, network_model, failed_node_list):
+    def from_node_to_node(self, from_node, objective_list, network_model, failed_node_list, random_state):
+
+        np.random.seed(random_state)
 
         objective = [_.network_group for _ in objective_list]
 
@@ -55,7 +60,7 @@ class Network(object):
                     continue
                 choose_from = list(set(end_ng_mgs) - set(failed_node_list))
                 if len(choose_from) > 0:
-                    to_mg = random.choice(choose_from)
+                    to_mg = np.random.choice(choose_from)
                     break
                 else:
                     if len(end_ng.assets) > 0:
@@ -190,7 +195,8 @@ class Network(object):
                     ng.machine_groups.append(mg)
 
                     group_count += 1
-            logger.info("         " + str(group_count) + " machine groups with a total of " + str(asset_count) + " assets")
+            logger.info(
+                "         " + str(group_count) + " machine groups with a total of " + str(asset_count) + " assets")
 
         # Handle orphans
         try:
@@ -198,4 +204,3 @@ class Network(object):
         except:
             logging.info("      " + "No orphan assets found :)")
             return
-
