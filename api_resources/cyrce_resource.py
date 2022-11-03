@@ -1,7 +1,6 @@
 from flask import request
 from flask_restful import Resource
 
-
 from input_module.cyrce_input import CyrceInput, CyrceTtpCoverageInput, \
     AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, Scenario, DirectImpact, Impact, IndirectImpact, \
     CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, \
@@ -12,11 +11,15 @@ from input_module.cyrce_input import CyrceInput, CyrceTtpCoverageInput, \
 from core_module.model_main import run_cyrce
 from core_module.analysis import run_ttp_coverage_metric
 
+
 class CyrceResource(Resource):
 
     def post(self):
         json_data = request.json
-        control_mode = json_data['control_mode']
+        if 'control_mode' not in json_data.keys():
+            control_mode = 'csf'
+        else:
+            control_mode = json_data['control_mode']
         cyrce_input = self.json_to_input(control_mode, json_data)
         response = run_cyrce(control_mode=control_mode, cyrce_input=cyrce_input)
         return response.reprJSON()
