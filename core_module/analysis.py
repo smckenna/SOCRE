@@ -113,15 +113,15 @@ def run_ttp_coverage_metric(scenario, ctrls_dict):
 def mit():
     # Download and parse ATT&CK STIX data
     attackdata = attackToExcel.get_stix_data("enterprise-attack")
-    techniques_data = stixToDf.techniquesToDf(attackdata, "enterprise-attack")
-    tactics_data = stixToDf.tacticsToDf(attackdata)
+    #techniques_data = stixToDf.techniquesToDf(attackdata, "enterprise-attack")
+    #tactics_data = stixToDf.tacticsToDf(attackdata)
 
     # Show T1102 and sub-techniques of T1102
-    techniques_df = techniques_data["techniques"]
-    print(techniques_df[techniques_df["ID"].str.contains("T1102")]["name"])
+    #techniques_df = techniques_data["techniques"]
+    #print(techniques_df[techniques_df["ID"].str.contains("T1102")]["name"])
     # Show citation data for LOLBAS Wmic reference
-    citations_df = techniques_data["citations"]
-    print(citations_df[citations_df["reference"].str.contains("LOLBAS Wmic")])
+    #citations_df = techniques_data["citations"]
+    #print(citations_df[citations_df["reference"].str.contains("LOLBAS Wmic")])
     # tactic_lbls = np.unique(techniques_df.tactics)
     # app_tactic_list = []
     # for t in tactic_lbls:
@@ -129,10 +129,10 @@ def mit():
     #    for tc in tacs_:
     #        app_tactic_list.append(tc.strip())
     # LAYERS OF CONTROLS
-    tactic_list = tactics_data['tactics'].name.tolist()
-    phase_dict = {key: {'ttps': [], 'sp80053': []} for key in tactic_list}
-    b = 1
-
-
+    #tactic_list = tactics_data['tactics'].name.tolist()
+    #phase_dict = {key: {'ttps': [], 'sp80053': []} for key in tactic_list}
+    #b = 1
+    foo = stixToDf.matricesToDf(attackdata, "enterprise-attack")
+    db=1
 if __name__ == '__main__':
     mit()
