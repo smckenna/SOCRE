@@ -214,7 +214,7 @@ def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
     return x11, p11
 
 
-def run_cyrce(control_mode, run_mode, cyrce_input):
+def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
     """
     Main routine to run CyRCE
     :param control_mode: controls mode, 'csf' or 'sp80053'
@@ -279,7 +279,11 @@ def run_cyrce(control_mode, run_mode, cyrce_input):
         elif control_mode == 'sp80053':
             a.controls['sp80053']['AT'] = cyrce_input.sp80053.AT
             a.controls['sp80053']['RA'] = cyrce_input.sp80053.RA
-
+            a.controls['csf']['identify']['value'] = cyrce_input.csf.identify.value
+            a.controls['csf']['protect']['value'] = cyrce_input.csf.protect.value
+            a.controls['csf']['detect']['value'] = cyrce_input.csf.detect.value
+            a.controls['csf']['respond']['value'] = cyrce_input.csf.respond.value
+            a.controls['csf']['recover']['value'] = cyrce_input.csf.recover.value
         a.allocate_data_space(['impact', 'access', 'risk'], numberOfMonteCarloRuns)
 
     # Use this metadata to set scale factor on likelihood of attack
@@ -373,42 +377,33 @@ def run_cyrce(control_mode, run_mode, cyrce_input):
 
     # Get random variable samples ahead of the MCS
     exploitabilityRV = generate_pert_random_variables(modeValue=exploitability,
-                                                      nIterations=numberOfMonteCarloRuns,
-                                                      random_seed=random_seed)
+                                                      nIterations=numberOfMonteCarloRuns)
     attackSurfaceRV = generate_pert_random_variables(modeValue=attackSurface,
-                                                     nIterations=numberOfMonteCarloRuns,
-                                                     random_seed=random_seed)
+                                                     nIterations=numberOfMonteCarloRuns)
     vulnerabilityRV = np.multiply(exploitabilityRV, attackSurfaceRV)
 
-    initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns,
-                                                          random_seed=random_seed)
-    execution_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns,
-                                                     random_seed=random_seed)
-    movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns,
-                                                    random_seed=random_seed)
+    initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
+    execution_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
+    movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
 
     detectRV = generate_pert_random_variables(modeValue=cyrce_input.csf.detect.value,
                                               gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                              nIterations=numberOfMonteCarloRuns,
-                                              random_seed=random_seed)
+                                              nIterations=numberOfMonteCarloRuns)
 
     protectRV = generate_pert_random_variables(modeValue=cyrce_input.csf.protect.value,
                                                gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                               nIterations=numberOfMonteCarloRuns,
-                                               random_seed=random_seed)
+                                               nIterations=numberOfMonteCarloRuns)
 
     # Compute combined Protect and Detect metric
     protectDetectRV = np.divide(np.add(detectRV, protectRV), 2)
 
     respondRV = generate_pert_random_variables(modeValue=cyrce_input.csf.respond.value,
                                                gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                               nIterations=numberOfMonteCarloRuns,
-                                               random_seed=INPUTS['random_seed'])
+                                               nIterations=numberOfMonteCarloRuns)
 
     recoverRV = generate_pert_random_variables(modeValue=cyrce_input.csf.recover.value,
                                                gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                               nIterations=numberOfMonteCarloRuns,
-                                               random_seed=INPUTS['random_seed'])
+                                               nIterations=numberOfMonteCarloRuns)
 
     # Compute combined Respond and Recover metric
     respondRecoverRV = np.divide(np.add(respondRV, recoverRV), 2)

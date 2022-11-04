@@ -1,15 +1,14 @@
 from flask import request
 from flask_restful import Resource
 
+from core_module.analysis import run_ttp_coverage_metric
+from core_module.model_main import run_cyrce
 from input_module.cyrce_input import CyrceInput, CyrceTtpCoverageInput, \
     AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, Scenario, DirectImpact, Impact, IndirectImpact, \
     CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, \
     IDAM, IDBE, IDGV, IDRA, IDRM, IDSC, PRAC, PRAT, PRDS, PRIP, PRMA, \
     PRPT, DEAE, DECM, DEDP, RSRP, RSCO, RSAN, RSMI, RSIM, RCRP, RCIM, RCCO, Sp80053, \
     AC, AT, AU, CA, CM, CP, IA, IR, MA, MP, PL, PE, PS, RA, SA, SC, SI, SR
-
-from core_module.model_main import run_cyrce
-from core_module.analysis import run_ttp_coverage_metric
 
 
 class CyrceResource(Resource):
@@ -20,8 +19,12 @@ class CyrceResource(Resource):
             control_mode = 'csf'
         else:
             control_mode = json_data['control_mode']
-        cyrce_input = self.json_to_input(control_mode, json_data)
-        response = run_cyrce(control_mode=control_mode, cyrce_input=cyrce_input)
+        if 'run_mode' not in json_data.keys():
+            run_mode = ['residual']
+        else:
+            run_mode = json_data['run_mode']
+        cyrce_input = self.json_to_input(control_mode=control_mode, json_data=json_data)
+        response = run_cyrce(control_mode=control_mode, cyrce_input=cyrce_input, run_mode=run_mode)
         return response.reprJSON()
 
     def json_to_input(self, control_mode, json_data):

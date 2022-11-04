@@ -91,7 +91,7 @@ if __name__ == '__main__':
                              csf=csf, sp80053=sp80053,
                              scenario=scenario)
 
-    output_csf_inh = run_cyrce(cyrce_input=cyrce_input, control_mode=control_mode, run_mode=['residual', 'residual'])
+    #output_csf_inh = run_cyrce(cyrce_input=cyrce_input, control_mode=control_mode, run_mode=['residual', 'residual'])
     #output_80053 = run_cyrce(cyrce_input=cyrce_input, control_mode='sp80053', run_mode=['residual', 'residual'])
 
     # mimic api
@@ -100,7 +100,7 @@ if __name__ == '__main__':
 
     cy_res = CyrceResource()
 
-    #output_csf_api = run_cyrce(control_mode='csf', cyrce_input=cy_res.json_to_input(json_data), run_mode=['residual', 'residual']).reprJSON()
+    output_csf_api = run_cyrce(control_mode='csf', cyrce_input=cy_res.json_to_input(control_mode='csf', json_data=json_data), run_mode=['residual', 'residual']).reprJSON()
     #output_80053_api = run_cyrce(control_mode='sp80053', cyrce_input=cy_res.json_to_input(json_data), run_mode=['residual', 'residual']).reprJSON()
 
    # with open('../sp80053.json') as file:
