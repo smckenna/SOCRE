@@ -1,13 +1,11 @@
 """
 Cyber Risk Computational Engine - CyCRE
 """
-
 import os
 import platform
 from collections import OrderedDict
 
 import networkx as nx
-import numpy as np
 import pandas as pd
 from scipy import interpolate
 from scipy.stats import poisson
@@ -216,23 +214,27 @@ def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
     return x11, p11
 
 
-def run_cyrce(control_mode, cyrce_input):
+def run_cyrce(control_mode, run_mode, cyrce_input, rng):
     """
     Main routine to run CyRCE
     :param control_mode: controls mode, 'csf' or 'sp80053'
+    :param run_mode: inherent or residual
     :param cyrce_input: input object
     :return: outputs
     """
 
     # TODO NETWORK ATTACK!
     # used for testing, etc.
-    if platform.uname()[1] == 'BAHG3479J3':
-        np.random.seed(INPUTS['random_seed'])
-        logger = logging.getLogger('Main')
-        logger.setLevel(level=logging.DEBUG)
-    else:
+    if platform.uname()[1] == 'xBAHG3479J3':
+        random_seed = INPUTS['random_seed']
+        #rng = np.random.default_rng(INPUTS['random_seed'])
         logger = logging.getLogger('Main')
         logger.setLevel(level=logging.INFO)
+    else:
+        logger = logging.getLogger('Main')
+        logger.setLevel(level=logging.DEBUG)
+        #rng = np.random.default_rng()
+        random_seed = int(rng.random() * 100000)
 
     graph = nx.read_graphml(os.path.join(os.path.dirname(__file__), INPUTS['graph_model_file']))
 
@@ -370,30 +372,30 @@ def run_cyrce(control_mode, cyrce_input):
     # Get random variable samples ahead of the MCS
     exploitabilityRV = generate_pert_random_variables(modeValue=exploitability,
                                                       nIterations=numberOfMonteCarloRuns,
-                                                      random_seed=INPUTS['random_seed'])
+                                                      random_seed=random_seed)
     attackSurfaceRV = generate_pert_random_variables(modeValue=attackSurface,
                                                      nIterations=numberOfMonteCarloRuns,
-                                                     random_seed=INPUTS['random_seed'])
+                                                     random_seed=random_seed)
     vulnerabilityRV = np.multiply(exploitabilityRV, attackSurfaceRV)
 
     initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns,
-                                                          random_seed=INPUTS['random_seed'])
+                                                          random_seed=random_seed)
     execution_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns,
-                                                     random_seed=INPUTS['random_seed'])
+                                                     random_seed=random_seed)
     movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns,
-                                                    random_seed=INPUTS['random_seed'])
+                                                    random_seed=random_seed)
 
     detectRVInherent = np.zeros([numberOfMonteCarloRuns])
     detectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.detect.value,
                                                       gamma=0.1 + 100 * cyrce_input.csf.identify.value,
                                                       nIterations=numberOfMonteCarloRuns,
-                                                      random_seed=INPUTS['random_seed'])
+                                                      random_seed=random_seed)
 
     protectRVInherent = np.zeros([numberOfMonteCarloRuns])
     protectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.protect.value,
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
                                                        nIterations=numberOfMonteCarloRuns,
-                                                       random_seed=INPUTS['random_seed'])
+                                                       random_seed=random_seed)
 
     # Compute combined Protect and Detect metric
     protectDetectRVInherent = np.zeros([numberOfMonteCarloRuns])
@@ -422,8 +424,13 @@ def run_cyrce(control_mode, cyrce_input):
     Each iteration is a single attack
     A single attack may have multiple attempts, though, based on the TA attempt_limit
     """
-    protectDetectRV = protectDetectRVResidual
-    respondRecoverRV = respondRecoverRVResidual
+    if run_mode == 'residual':
+        protectDetectRV = protectDetectRVResidual
+        respondRecoverRV = respondRecoverRVResidual
+    else:
+        protectDetectRV = 0 * protectDetectRVResidual
+        respondRecoverRV = 0 * respondRecoverRVResidual
+
     for iteration in range(0, numberOfMonteCarloRuns):
 
         tryCount = 1
@@ -458,7 +465,7 @@ def run_cyrce(control_mode, cyrce_input):
                                                                objective_list=attackDictElement['entryPoint'],
                                                                network_model=network_model,
                                                                failed_node_list=failedNodeList,
-                                                               random_state=INPUTS['random_seed'])
+                                                               rng=rng)
                     if nextNode is not None:
                         logger.debug(' ' + attackDictElement['origin'] + ' ---?--> ' + nextNode.label)
                 else:
@@ -466,9 +473,9 @@ def run_cyrce(control_mode, cyrce_input):
                                                                objective_list=attackDictElement['destination'],
                                                                network_model=network_model,
                                                                failed_node_list=failedNodeList,
-                                                               random_state=INPUTS['random_seed'])
+                                                               rng=rng)
                     if nextNode is not None:
-                        logger.debug(currentNode.label + ' --?--> ' + nextNode.label)
+                        logger.debug(' ' + currentNode.label + ' ---?--> ' + nextNode.label)
 
                 if nextNode is None:
                     tryCount += 1
@@ -576,8 +583,9 @@ def run_cyrce(control_mode, cyrce_input):
         a.imp = np.mean(a.imp_vec[a.manifest['access'] > 0])
         a.risk = np.mean(a.risk_vec)
 
-        if True:  # a.uuid == enterprise.uuid:
+        if a.type == 'critical_server':
             # SPM diagnostics
+            print("--------------------------------")
             print("lh = " + str(np.round(a.lh, 4)))
             print("imp = " + str(np.round(a.imp, 4)))
             print("risk = " + str(np.round(a.risk, 4)))
@@ -604,21 +612,21 @@ def run_cyrce(control_mode, cyrce_input):
                 directImpact=float(directImpactValue),
                 indirectImpact=float(indirectImpactValue))))
 
-            return CyrceOutput(
-                overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
-                overallResidualLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
-                overallInherentImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
-                overallResidualImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
-                overallInherentRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
-                overallResidualRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
-                attackSurface=float(attackSurface),
-                exploitability=exploitability,
-                vulnerability=vulnerability,
-                threatActorCapacity=threat_actor.properties['capability'],
-                threatLevel=float(np.mean(threatLevel)),
-                probability_scale_factor0=float(probability_scale_factor0),
-                probability_scale_factor=float(probability_scale_factor),
-                attackMotivators=float(attackMotivator),
-                directImpact=float(directImpactValue),
-                indirectImpact=float(indirectImpactValue)
-            )
+    return CyrceOutput(
+        overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+        overallResidualLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+        overallInherentImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+        overallResidualImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+        overallInherentRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
+        overallResidualRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
+        attackSurface=float(attackSurface),
+        exploitability=exploitability,
+        vulnerability=vulnerability,
+        threatActorCapacity=threat_actor.properties['capability'],
+        threatLevel=float(np.mean(threatLevel)),
+        probability_scale_factor0=float(probability_scale_factor0),
+        probability_scale_factor=float(probability_scale_factor),
+        attackMotivators=float(attackMotivator),
+        directImpact=float(directImpactValue),
+        indirectImpact=float(indirectImpactValue)
+    )

@@ -1,26 +1,28 @@
 import json
+
+import numpy as np
+
+from api_resources.cyrce_resource import CyrceResource
+from core_module.model_main import run_cyrce
 from input_module.cyrce_input import CyrceInput, \
     AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, DirectImpact, Impact, IndirectImpact, \
     CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, \
     IDAM, IDBE, IDGV, IDRA, IDRM, IDSC, PRAC, PRAT, PRDS, PRIP, PRMA, \
     PRPT, DEAE, DECM, DEDP, RSRP, RSCO, RSAN, RSMI, RSIM, RCRP, RCIM, RCCO, AT_1, AT_2, AT_3, AT_4, RA_1, RA_2, RA_3, \
-    RA_5, RA_7, RA_9, AT, RA, Sp80053_
-from api_resources.cyrce_resource import CyrceResource
-from core_module.model_main import run_cyrce
-from core_module.analysis import run_ttp_coverage_metric
+    RA_5, RA_7, RA_9, RA, Sp80053_
 from scenario_module.ScenarioModel import Scenario
 
 if __name__ == '__main__':
 
-    attackMotivators = AttackMotivators(2.5, 2.5, 2.5, 2.5)
-    attackSurface = AttackSurface(3, 2)
+    attackMotivators = AttackMotivators(2., 2., 2., 2.)
+    attackSurface = AttackSurface(2, 2)
     exploitability = Exploitability(2)
     threatActorInput = ThreatActorInput(determination='high', resources='organization', sophistication='advanced')
-    directImpact = DirectImpact(3, 3, 2, 1)
-    indirectImpact = IndirectImpact(3, 3, 2, 1)
+    directImpact = DirectImpact(5, 5, 5, 5)
+    indirectImpact = IndirectImpact(5, 5, 5, 5)
     impact = Impact(directImpact, indirectImpact)
-    scenario = Scenario(attackAction='hacking', attackThreatType='threatactor', attackTarget='label:Crown Jewel',
-                        attackLossType='c', attackIndustry='information', attackGeography='na', orgSize="large")
+    scenario = Scenario(attackAction='malware', attackThreatType='threatactor', attackTarget='label:Crown Jewel',
+                        attackLossType='c', attackIndustry='finance', attackGeography='na', orgSize="large")
     # scenario = Scenario()  # know nothing case; posterior is prior
     identify = CsfIdentify(IDAM=IDAM(0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
                            IDBE=IDBE(0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
@@ -90,7 +92,12 @@ if __name__ == '__main__':
                              impact=impact,
                              csf=csf, sp80053=sp80053,
                              scenario=scenario)
-    output_csf = run_cyrce(cyrce_input=cyrce_input, control_mode=control_mode)
+
+    rng = np.random.default_rng()
+    random_seed = int(rng.random() * 100000)
+
+    output_csf_inh = run_cyrce(cyrce_input=cyrce_input, control_mode=control_mode, run_mode='inherent', rng=rng)
+    output_csf_res = run_cyrce(cyrce_input=cyrce_input, control_mode=control_mode, run_mode='residual', rng=rng)
     #output_80053 = run_cyrce(cyrce_input=cyrce_input, control_mode='sp80053')
 
     # mimic api
