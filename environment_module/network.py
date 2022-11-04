@@ -20,7 +20,7 @@ class Network(object):
         self.list_of_network_groups = []
         self.__set_up_network_groups()
 
-    def from_node_to_node(self, from_node, objective_list, network_model, failed_node_list, rng=None):
+    def from_node_to_node(self, from_node, objective_list, network_model, failed_node_list):
 
         objective = [_.network_group for _ in objective_list]
 
@@ -42,7 +42,7 @@ class Network(object):
         to_mg = None
         ct = 0
         while ct < 3:  # TODO what should this be?
-            p_ = rng.choice(np.arange(0, len(all_paths)))
+            p_ = np.random.choice(np.arange(0, len(all_paths)))
             p = all_paths[p_]
             path = [n for n in p if n != 'hub']
             if len(path) == 1:
@@ -58,7 +58,7 @@ class Network(object):
                     continue
                 choose_from = list(set(end_ng_mgs) - set(failed_node_list))
                 if len(choose_from) > 0:
-                    to_mg = rng.choice(choose_from)
+                    to_mg = np.random.choice(choose_from)
                     break
                 else:
                     if len(end_ng.assets) > 0:

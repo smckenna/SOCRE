@@ -1,9 +1,10 @@
+import os
+from uuid import uuid4
+
+import numpy as np
 from pybbn.graph.dag import Bbn
 from pybbn.graph.jointree import EvidenceBuilder
 from pybbn.pptc.inferencecontroller import InferenceController
-import os
-from uuid import uuid4
-import random
 
 
 class Scenario:
@@ -18,7 +19,7 @@ class Scenario:
         self.attackGeography = attackGeography
         self.attackAction = attackAction
         if attackLossType is None:
-            self.attackLossType = random.choice(['c', 'i', 'a'])  # pick a loss type randomly
+            self.attackLossType = np.random.choice(['c', 'i', 'a'])  # pick a loss type randomly
         else:
             self.attackLossType = attackLossType
         self.attackIndustry = attackIndustry

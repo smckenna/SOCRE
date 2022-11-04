@@ -214,27 +214,28 @@ def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
     return x11, p11
 
 
-def run_cyrce(control_mode, run_mode, cyrce_input, rng):
+def run_cyrce(control_mode, run_mode, cyrce_input):
     """
     Main routine to run CyRCE
     :param control_mode: controls mode, 'csf' or 'sp80053'
-    :param run_mode: inherent or residual
+    :param run_mode: list of ways to run, 'inherent' or 'residual' or ?
     :param cyrce_input: input object
     :return: outputs
     """
 
     # TODO NETWORK ATTACK!
     # used for testing, etc.
-    if platform.uname()[1] == 'xBAHG3479J3':
+    if platform.uname()[1] == 'BAHG3479J3':
         random_seed = INPUTS['random_seed']
-        #rng = np.random.default_rng(INPUTS['random_seed'])
         logger = logging.getLogger('Main')
-        logger.setLevel(level=logging.INFO)
+        logger.setLevel(level=logging.DEBUG)
     else:
         logger = logging.getLogger('Main')
         logger.setLevel(level=logging.DEBUG)
-        #rng = np.random.default_rng()
+        rng = np.random.default_rng()
         random_seed = int(rng.random() * 100000)
+
+    np.random.seed(random_seed)
 
     graph = nx.read_graphml(os.path.join(os.path.dirname(__file__), INPUTS['graph_model_file']))
 
@@ -349,10 +350,10 @@ def run_cyrce(control_mode, run_mode, cyrce_input, rng):
     """
 
     # Compute Threat Level; only used as a reporting metric
-    threatLevel = probability_scale_factor * threat_actor.properties[
-        'capability']  # MODEL: power = ~rate * force;  P = F * V
+    # MODEL: power = ~rate * force;  P = F * V
+    threatLevel = probability_scale_factor * threat_actor.properties['capability']
 
-    # Pre-allocate space
+    # Pre-allocate space for trscking dict
     attackDict = OrderedDict((k, {}) for k in range(numberOfMonteCarloRuns))
 
     # TODO using this idea, but not sold on it
@@ -367,7 +368,8 @@ def run_cyrce(control_mode, run_mode, cyrce_input, rng):
     exploitability, _ = update_metric(exploitability0, exploitability_)
 
     # Compute Vulnerability metrics
-    vulnerability = exploitability * attackSurface  # MODEL:  flux = porosity * area * gradient(=1)
+    # MODEL:  flux = porosity * area * gradient(=1)
+    vulnerability = exploitability * attackSurface
 
     # Get random variable samples ahead of the MCS
     exploitabilityRV = generate_pert_random_variables(modeValue=exploitability,
@@ -385,37 +387,31 @@ def run_cyrce(control_mode, run_mode, cyrce_input, rng):
     movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns,
                                                     random_seed=random_seed)
 
-    detectRVInherent = np.zeros([numberOfMonteCarloRuns])
-    detectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.detect.value,
-                                                      gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                                      nIterations=numberOfMonteCarloRuns,
-                                                      random_seed=random_seed)
+    detectRV = generate_pert_random_variables(modeValue=cyrce_input.csf.detect.value,
+                                              gamma=0.1 + 100 * cyrce_input.csf.identify.value,
+                                              nIterations=numberOfMonteCarloRuns,
+                                              random_seed=random_seed)
 
-    protectRVInherent = np.zeros([numberOfMonteCarloRuns])
-    protectRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.protect.value,
-                                                       gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                                       nIterations=numberOfMonteCarloRuns,
-                                                       random_seed=random_seed)
+    protectRV = generate_pert_random_variables(modeValue=cyrce_input.csf.protect.value,
+                                               gamma=0.1 + 100 * cyrce_input.csf.identify.value,
+                                               nIterations=numberOfMonteCarloRuns,
+                                               random_seed=random_seed)
 
     # Compute combined Protect and Detect metric
-    protectDetectRVInherent = np.zeros([numberOfMonteCarloRuns])
-    protectDetectRVResidual = np.divide(np.add(detectRVResidual, protectRVResidual), 2)
+    protectDetectRV = np.divide(np.add(detectRV, protectRV), 2)
 
-    respondRVInherent = np.zeros([numberOfMonteCarloRuns])
-    respondRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.respond.value,
-                                                       gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                                       nIterations=numberOfMonteCarloRuns,
-                                                       random_seed=INPUTS['random_seed'])
+    respondRV = generate_pert_random_variables(modeValue=cyrce_input.csf.respond.value,
+                                               gamma=0.1 + 100 * cyrce_input.csf.identify.value,
+                                               nIterations=numberOfMonteCarloRuns,
+                                               random_seed=INPUTS['random_seed'])
 
-    recoverRVInherent = np.zeros([numberOfMonteCarloRuns])
-    recoverRVResidual = generate_pert_random_variables(modeValue=cyrce_input.csf.recover.value,
-                                                       gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                                       nIterations=numberOfMonteCarloRuns,
-                                                       random_seed=INPUTS['random_seed'])
+    recoverRV = generate_pert_random_variables(modeValue=cyrce_input.csf.recover.value,
+                                               gamma=0.1 + 100 * cyrce_input.csf.identify.value,
+                                               nIterations=numberOfMonteCarloRuns,
+                                               random_seed=INPUTS['random_seed'])
 
     # Compute combined Respond and Recover metric
-    respondRecoverRVInherent = np.zeros([numberOfMonteCarloRuns])
-    respondRecoverRVResidual = np.divide(np.add(respondRVResidual, recoverRVResidual), 2)
+    respondRecoverRV = np.divide(np.add(respondRV, recoverRV), 2)
 
     """
     ********************
@@ -424,166 +420,163 @@ def run_cyrce(control_mode, run_mode, cyrce_input, rng):
     Each iteration is a single attack
     A single attack may have multiple attempts, though, based on the TA attempt_limit
     """
-    if run_mode == 'residual':
-        protectDetectRV = protectDetectRVResidual
-        respondRecoverRV = respondRecoverRVResidual
-    else:
-        protectDetectRV = 0 * protectDetectRVResidual
-        respondRecoverRV = 0 * respondRecoverRVResidual
+    for run in run_mode:
+        np.random.seed(random_seed)
 
-    for iteration in range(0, numberOfMonteCarloRuns):
+        if run == 'inherent':
+            protectDetectRV = 0 * protectDetectRV
+            respondRecoverRV = 0 * respondRecoverRV
 
-        tryCount = 1
-        origin = 'internet'
-        destination = attack_mg_target
-        entryNode = attack_mg_target
+        for iteration in range(0, numberOfMonteCarloRuns):
 
-        initial_access = True
-        currentNode = None
-        failedNodeList = []
+            tryCount = 1
+            origin = 'internet'
+            destination = attack_mg_target
+            entryNode = attack_mg_target
 
-        logger.debug(' -----------------')
-        logger.debug(' Iteration: ' + str(iteration))
+            initial_access = True
+            currentNode = None
+            failedNodeList = []
 
-        attackDict[iteration]['iteration'] = iteration
-        attackDict[iteration]['attack_type'] = 'nominal'
-        attackDict[iteration]['probability_scale_factor'] = probability_scale_factor
-        attackDict[iteration]['origin'] = origin
-        attackDict[iteration]['destination'] = destination
-        attackDict[iteration]['entryPoint'] = entryNode
-        attackDict[iteration]['sequence'] = [origin]
+            logger.debug(' -----------------')
+            logger.debug(' Iteration: ' + str(iteration))
 
-        attackDictElement = attackDict[iteration]
-        done = False
+            attackDict[iteration]['iteration'] = iteration
+            attackDict[iteration]['attack_type'] = 'nominal'
+            attackDict[iteration]['probability_scale_factor'] = probability_scale_factor
+            attackDict[iteration]['origin'] = origin
+            attackDict[iteration]['destination'] = destination
+            attackDict[iteration]['entryPoint'] = entryNode
+            attackDict[iteration]['sequence'] = [origin]
 
-        while not done:
+            attackDictElement = attackDict[iteration]
+            done = False
 
-            while tryCount <= threat_actor.attempt_limit:
+            while not done:
 
-                if initial_access:
-                    nextNode = network_model.from_node_to_node(from_node=attackDictElement['origin'],
-                                                               objective_list=attackDictElement['entryPoint'],
-                                                               network_model=network_model,
-                                                               failed_node_list=failedNodeList,
-                                                               rng=rng)
-                    if nextNode is not None:
-                        logger.debug(' ' + attackDictElement['origin'] + ' ---?--> ' + nextNode.label)
-                else:
-                    nextNode = network_model.from_node_to_node(from_node=currentNode.network_group,
-                                                               objective_list=attackDictElement['destination'],
-                                                               network_model=network_model,
-                                                               failed_node_list=failedNodeList,
-                                                               rng=rng)
-                    if nextNode is not None:
-                        logger.debug(' ' + currentNode.label + ' ---?--> ' + nextNode.label)
+                while tryCount <= threat_actor.attempt_limit:
 
-                if nextNode is None:
-                    tryCount += 1
-                    failedNodeList.append(nextNode)
-                    if tryCount > threat_actor.attempt_limit:
-                        logger.debug('   End of path reached, attacker giving up')
-                        done = True
-                        break
+                    if initial_access:
+                        nextNode = network_model.from_node_to_node(from_node=attackDictElement['origin'],
+                                                                   objective_list=attackDictElement['entryPoint'],
+                                                                   network_model=network_model,
+                                                                   failed_node_list=failedNodeList)
+                        if nextNode is not None:
+                            logger.debug(' ' + attackDictElement['origin'] + ' ---?--> ' + nextNode.label)
                     else:
-                        logger.debug('   End of path reached, attacker trying again')
+                        nextNode = network_model.from_node_to_node(from_node=currentNode.network_group,
+                                                                   objective_list=attackDictElement['destination'],
+                                                                   network_model=network_model,
+                                                                   failed_node_list=failedNodeList)
+                        if nextNode is not None:
+                            logger.debug(' ' + currentNode.label + ' ---?--> ' + nextNode.label)
 
-                # Determine if threat actor gains INITIAL ACCESS
-                if initial_access:
-                    access = determine_initial_access(threat_actor.properties['capability'],
-                                                      protectDetectRV[iteration],
-                                                      vulnerabilityRV[iteration],
-                                                      initial_access_RV[iteration], coeffs)
-                else:  # Determine if threat actor moves to next node
-                    access = determine_movement(threat_actor.properties['capability'],
-                                                protectDetectRV[iteration],
-                                                exploitabilityRV[iteration],
-                                                movement_RV[iteration], coeffs)
-
-                if nextNode is not None:
-                    if access is False:
+                    if nextNode is None:
                         tryCount += 1
                         failedNodeList.append(nextNode)
                         if tryCount > threat_actor.attempt_limit:
-                            logger.debug('   Failed, attacker giving up - too many tries')
+                            logger.debug('   End of path reached, attacker giving up')
                             done = True
                             break
                         else:
-                            logger.debug('   Failed, trying again')
-                    else:
-                        logger.debug('    Next hop enabled ...')
-                        initial_access = False
-                        currentNode = nextNode
+                            logger.debug('   End of path reached, attacker trying again')
 
-                    if currentNode in attackDictElement['destination']:
-                        done = True
-                        initial_access = False
-                        logger.debug('       Reached target                                             XXX')
-                        break
+                    # Determine if threat actor gains INITIAL ACCESS
+                    if initial_access:
+                        access = determine_initial_access(threat_actor.properties['capability'],
+                                                          protectDetectRV[iteration],
+                                                          vulnerabilityRV[iteration],
+                                                          initial_access_RV[iteration], coeffs)
+                    else:  # Determine if threat actor moves to next node
+                        access = determine_movement(threat_actor.properties['capability'],
+                                                    protectDetectRV[iteration],
+                                                    exploitabilityRV[iteration],
+                                                    movement_RV[iteration], coeffs)
 
-            if tryCount > threat_actor.attempt_limit:
-                done = True
+                    if nextNode is not None:
+                        if access is False:
+                            tryCount += 1
+                            failedNodeList.append(nextNode)
+                            if tryCount > threat_actor.attempt_limit:
+                                logger.debug('   Failed, attacker giving up - too many tries')
+                                done = True
+                                break
+                            else:
+                                logger.debug('   Failed, trying again')
+                        else:
+                            logger.debug('    Next hop enabled ...')
+                            initial_access = False
+                            currentNode = nextNode
 
-            if nextNode is not None:
-                execution = determine_execution(threat_actor.properties['capability'],
-                                                protectDetectRV[iteration],
-                                                exploitabilityRV[iteration],
-                                                execution_RV[iteration], coeffs)
+                        if currentNode in attackDictElement['destination']:
+                            done = True
+                            initial_access = False
+                            logger.debug('       Reached target                                             XXX')
+                            break
 
-                logger.debug('          Execution success?: ' + str(execution))
-                impact = 0.
-                access = 0.
-                if execution:
-                    access = 1.
-                    impact = determine_impact(respondRecoverRV[iteration], nextNode)
-                    logger.debug('             Impact: ' + str(round(impact, 2)))
-                nextNode.assets[0].manifest['risk'][iteration] = probability_scale_factor * impact
-                nextNode.assets[0].manifest['impact'][iteration] = impact
-                nextNode.assets[0].manifest['access'][iteration] = access
+                if tryCount > threat_actor.attempt_limit:
+                    done = True
 
-    # Collect MCS results to calculate the outputs we want (for the single enterprise node)
-    for a in all_entities.list:
-        a.lh_vec = probability_scale_factor * a.manifest['access']
-        a.imp_vec = a.manifest['impact']
-        a.risk_vec = np.multiply(a.lh_vec, a.imp_vec)
+                if nextNode is not None:
+                    execution = determine_execution(threat_actor.properties['capability'],
+                                                    protectDetectRV[iteration],
+                                                    exploitabilityRV[iteration],
+                                                    execution_RV[iteration], coeffs)
 
-        # Computing confidence intervals
-        a.LH_confInt = get_confidence_interval(a.lh_vec, alpha=INPUTS['confidenceAlpha'])
-        a.imp_confInt = get_confidence_interval(a.imp_vec[a.manifest['access'] == 1],
-                                                alpha=INPUTS['confidenceAlpha'])
-        a.risk_confInt = get_confidence_interval(a.risk_vec, alpha=INPUTS['confidenceAlpha'])
-        if INPUTS['scoring_lambda'] == 0:
-            tmpRiskTransformed_vec = np.log(a.risk_vec + 1e-10)
-        else:
-            tmpRiskTransformed_vec = np.power(a.risk_vec, INPUTS['scoring_lambda'])
+                    logger.debug('          Execution success?: ' + str(execution))
+                    impact = 0.
+                    access = 0.
+                    if execution:
+                        access = 1.
+                        impact = determine_impact(respondRecoverRV[iteration], nextNode)
+                        logger.debug('             Impact: ' + str(round(impact, 2)))
+                    nextNode.assets[0].manifest['risk'][iteration] = probability_scale_factor * impact
+                    nextNode.assets[0].manifest['impact'][iteration] = impact
+                    nextNode.assets[0].manifest['access'][iteration] = access
 
-        riskLevel_vec = INPUTS['scoring_fit'][0] * tmpRiskTransformed_vec + INPUTS['scoring_fit'][1]
-        riskLevel_vec[riskLevel_vec < 0] = 0
-        riskLevel_vec[riskLevel_vec > 5] = 5
+        # Collect MCS results to calculate the outputs we want (for the single target node)
+        for a in [_ for _ in all_entities.list if _.type == 'server' and _.critical]:
+            a.lh_vec = probability_scale_factor * a.manifest['access']
+            a.imp_vec = a.manifest['impact']
+            a.risk_vec = np.multiply(a.lh_vec, a.imp_vec)
 
-        a.riskLevel_confInt = max(min(2.5, get_confidence_interval(riskLevel_vec[riskLevel_vec > 0],
-                                                                   alpha=INPUTS['confidenceAlpha'])), 0)
-        # Computing variances
-        a.LH_var = float(np.var(a.lh_vec))
+            # Computing confidence intervals
+            a.LH_confInt = get_confidence_interval(a.lh_vec, alpha=INPUTS['confidenceAlpha'])
+            a.imp_confInt = get_confidence_interval(a.imp_vec[a.manifest['access'] == 1],
+                                                    alpha=INPUTS['confidenceAlpha'])
+            a.risk_confInt = get_confidence_interval(a.risk_vec, alpha=INPUTS['confidenceAlpha'])
+            if INPUTS['scoring_lambda'] == 0:
+                tmpRiskTransformed_vec = np.log(a.risk_vec + 1e-10)
+            else:
+                tmpRiskTransformed_vec = np.power(a.risk_vec, INPUTS['scoring_lambda'])
 
-        a.imp_var = float(np.var(a.imp_vec))
+            riskLevel_vec = INPUTS['scoring_fit'][0] * tmpRiskTransformed_vec + INPUTS['scoring_fit'][1]
+            riskLevel_vec[riskLevel_vec < 0] = 0
+            riskLevel_vec[riskLevel_vec > 5] = 5
 
-        a.risk_var = np.var(a.risk_vec)
+            a.riskLevel_confInt = max(min(2.5, get_confidence_interval(riskLevel_vec[riskLevel_vec > 0],
+                                                                       alpha=INPUTS['confidenceAlpha'])), 0)
+            # Computing variances
+            a.LH_var = float(np.var(a.lh_vec))
 
-        a.riskLevel_var = np.var(riskLevel_vec)
+            a.imp_var = float(np.var(a.imp_vec))
 
-        if INPUTS['scoring_lambda'] == 0:
-            riskTransformed = np.log(np.mean(a.risk_vec) + 1e-10)
-        else:
-            riskTransformed = np.mean(a.risk_vec) ** INPUTS['scoring_lambda']
+            a.risk_var = np.var(a.risk_vec)
 
-        a.riskLevel = max(min(5, INPUTS['scoring_fit'][0] * np.mean(riskTransformed) + INPUTS['scoring_fit'][1]), 0)
+            a.riskLevel_var = np.var(riskLevel_vec)
 
-        # Computing means
-        a.lh = np.mean(a.lh_vec)
-        a.imp = np.mean(a.imp_vec[a.manifest['access'] > 0])
-        a.risk = np.mean(a.risk_vec)
+            if INPUTS['scoring_lambda'] == 0:
+                riskTransformed = np.log(np.mean(a.risk_vec) + 1e-10)
+            else:
+                riskTransformed = np.mean(a.risk_vec) ** INPUTS['scoring_lambda']
 
-        if a.type == 'critical_server':
+            a.riskLevel = max(min(5, INPUTS['scoring_fit'][0] * np.mean(riskTransformed) + INPUTS['scoring_fit'][1]), 0)
+
+            # Computing means
+            a.lh = np.mean(a.lh_vec)
+            a.imp = np.mean(a.imp_vec[a.manifest['access'] > 0])
+            a.risk = np.mean(a.risk_vec)
+
             # SPM diagnostics
             print("--------------------------------")
             print("lh = " + str(np.round(a.lh, 4)))

@@ -1,19 +1,22 @@
-import os
-import numpy as np
 import ast
-from scipy.special import stdtr
 import math
-import requests
+import os
 from shutil import copyfileobj
-from config import INPUTS
+
+import numpy as np
+import requests
 from netaddr import *
 from pandas import read_excel
 from pert import PERT
+from scipy.special import stdtr
 from scipy.stats import uniform, norm, binom
+
+from config import INPUTS
+
 
 # np.seterr(all='raise')
 
-def generate_pert_random_variables(modeValue=0.5, gamma=2.0, nIterations=1000, random_seed=None):
+def generate_pert_random_variables(modeValue=0.5, gamma=2.0, nIterations=1000):
     """
     The Beta-PERT methodology was developed in the context of Program Evaluation and Review Technique (PERT). It is
     based on a pessimistic estimate (minimum value), a most likely estimate (mode), and an optimistic estimate
@@ -22,32 +25,29 @@ def generate_pert_random_variables(modeValue=0.5, gamma=2.0, nIterations=1000, r
     :param modeValue: the mode
     :param gamma: the spread parameter
     :param nIterations: number of values to generate
-    :param random_seed: random seed
     :return: nIterations samples from the specified PERT distribution
     """
     maxValue = 1
-    return PERT(0, modeValue, maxValue, gamma).rvs(size=nIterations, random_state=random_seed)
+    return PERT(0, modeValue, maxValue, gamma).rvs(size=nIterations)
 
 
-def generate_gaussian_random_variables(mean=0.0, stdDev=1.0, nIterations=1000, random_seed=None):
+def generate_gaussian_random_variables(mean=0.0, stdDev=1.0, nIterations=1000):
     """
     :param mean: mean
     :param stdDev: standard deviation
     :param nIterations: number of values to generate
-    :param random_seed: random seed
     :return: nIterations samples from the normal distribution
     """
-    return norm.rvs(loc=mean, scale=stdDev, size=nIterations, random_state=random_seed)
+    return norm.rvs(loc=mean, scale=stdDev, size=nIterations)
 
 
-def generate_uniform_random_variables(nIterations=1000, random_seed=None):
+def generate_uniform_random_variables(nIterations=1000):
     """
     Generate random variables from the uniform distribution from 0 to 1
     :param nIterations: number of values to generate
-    :param random_seed: random seed
     :return: nIterations samples from the unit uniform distribution
     """
-    return uniform.rvs(loc=0, scale=1, size=nIterations, random_state=random_seed)
+    return uniform.rvs(loc=0, scale=1, size=nIterations)
 
 
 def fetch_excel_data(url, sheet_name, use_cols=None, skip_rows=0, data_type=str):
