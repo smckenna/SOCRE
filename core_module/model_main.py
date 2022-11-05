@@ -231,7 +231,7 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
         logger.setLevel(level=logging.DEBUG)
     else:
         logger = logging.getLogger('Main')
-        logger.setLevel(level=logging.DEBUG)
+        logger.setLevel(level=logging.INFO)
         rng = np.random.default_rng()
         random_seed = int(rng.random() * 100000)
 
@@ -294,10 +294,12 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
     attackThreatType = cyrce_input.scenario.attackThreatType
     orgSize = cyrce_input.scenario.orgSize
 
+    bbn_file = os.path.join(os.path.dirname(__file__), INPUTS['bbn_file'])
+
     scenario = ScenarioModel.Scenario(attackAction=attackAction, attackThreatType=attackThreatType,
                                       attackGeography=attackGeography, attackLossType=attackLossType,
                                       attackIndustry=attackIndustry, orgSize=orgSize)
-    scenario.determine_scenario_probability_scale_factor(bbn_file=INPUTS['bbn_file'], verbose=False)
+    scenario.determine_scenario_probability_scale_factor(bbn_file=bbn_file, verbose=False)
 
     # Abstraction groups
     # Will use asset management data, network model, etc.

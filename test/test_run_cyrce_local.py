@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 
@@ -8,7 +9,7 @@ from core_module.model_main import run_cyrce
 
 @pytest.fixture(name="run")
 def fixture_run():
-    with open('../request_no_impact.json') as file:
+    with open(os.path.join(os.path.dirname(__file__), '../request.json')) as file:
         json_data = json.load(file)
 
     cy_res = CyrceResource()
@@ -24,12 +25,12 @@ def test_run(run):
     output_csf = run_cyrce(control_mode='csf', cyrce_input=cyrce_input, run_mode=['residual'])
 
     # base
-    #assert output_csf.overallResidualRiskLevel.value == 3.076897319940575
+    assert output_csf.overallResidualRiskLevel.value == 3.076897319940575
     # min
     #assert output_csf.overallResidualRiskLevel.value == 0.7773578795842138
     # max
     #assert output_csf.overallResidualRiskLevel.value == 5
     # no impact
-    assert output_csf.overallResidualRiskLevel.value == 0
+    #assert output_csf.overallResidualRiskLevel.value == 0
 
     print("passed test")
