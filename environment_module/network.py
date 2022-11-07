@@ -36,7 +36,7 @@ class Network(object):
         # Original scheme was to choose "best" next hop, based on "ROI"
         to_mg = None
         ct = 0
-        while ct < 3:  # TODO what should this be?
+        while ct < 5:  # TODO what should this be?  prob a function of network size
             p_ = np.random.choice(np.arange(0, len(all_paths)))
             p = all_paths[p_]
             path = [n for n in p if n != 'hub']
@@ -84,7 +84,7 @@ class Network(object):
         logger = logging.getLogger('Main')
 
         logger.debug(str(len(self.graph.nodes)) + " network nodes with " + str(len(self.graph.edges)) +
-                    " edges loaded")
+                     " edges loaded")
 
         logger.debug("Setting up IP addresses for model ...")
         for n in self.graph.nodes:
@@ -143,7 +143,7 @@ class Network(object):
         logger.debug("    " + str(len(orphans)) + " orphan assets identified")
 
         if len(orphans) > 0:
-            if orphan_group_exists == False:
+            if not orphan_group_exists:
                 orphanGroup = NetworkGroup('orphans')
                 orphanGroup.machine_groups = []
                 orphanGroup.assets = orphans

@@ -21,7 +21,7 @@ if __name__ == '__main__':
     impact = Impact(directImpact, indirectImpact)
     scenario = Scenario(attackAction='malware', attackThreatType='threatactor', attackTarget='label:Crown Jewel',
                         attackLossType='c', attackIndustry='finance', attackGeography='na', orgSize="large")
-    # scenario = Scenario()  # know nothing case; posterior is prior
+    scenario = Scenario()  # know nothing case; posterior is prior
     identify = CsfIdentify(IDAM=IDAM(0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
                            IDBE=IDBE(0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
                            IDGV=IDGV(0.8, 0.8, 0.8, 0.8, 0.8),

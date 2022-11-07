@@ -1,7 +1,6 @@
 import os
 from uuid import uuid4
 
-import numpy as np
 from pybbn.graph.dag import Bbn
 from pybbn.graph.jointree import EvidenceBuilder
 from pybbn.pptc.inferencecontroller import InferenceController
@@ -18,10 +17,7 @@ class Scenario:
         self.probability_scale_factor = 0.5
         self.attackGeography = attackGeography
         self.attackAction = attackAction
-        if attackLossType is None:
-            self.attackLossType = np.random.choice(['c', 'i', 'a'])  # pick a loss type randomly
-        else:
-            self.attackLossType = attackLossType
+        self.attackLossType = attackLossType
         self.attackIndustry = attackIndustry
         self.orgSize = orgSize
         self.attackThreatType = attackThreatType
@@ -124,11 +120,8 @@ if __name__ == '__main__':
                         attackIndustry='professional')
     scenario = Scenario(attackThreatType='internal', attackAction='misuse')
     scenario = Scenario(attackIndustry='information', orgSize='large', attackThreatType='threatactor',
-                        attackAction='malware', attackGeography='na',
-                        attackLossType='c')
-    scenario = Scenario(attackIndustry='finance', orgSize='large',
-                        attackGeography='na')
-    scenario = Scenario()
+                        attackAction='malware', attackGeography='na', attackLossType='c')
+    #scenario = Scenario()
     scenario.determine_scenario_probability_scale_factor(bbn_file=bbn_file, verbose=True)
 
     print(round(scenario.probability_scale_factor, 2))

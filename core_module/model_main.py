@@ -42,10 +42,9 @@ def determine_initial_access(tac, ia_control, vuln, ia_RV, coeffs):
     """
     Determine "initial access" (ATT&CK Recon, Resource Dev, Initial Access) success or failure
     :param tac: threat actor capability
-    :param ia_control_inherent: control against Initial Access TTPs, inherent
-    :param ia_control_residual: control against Initial Access TTPs, residual
+    :param ia_control: control against Initial Access TTPs
     :param vuln: vulnerability metric
-    :param iaRV: Initial Access random variable
+    :param ia_RV: Initial Access random variable
     :param coeffs: threat actor capability versus Control Effectiveness fit coefficients
     :return: A pair of booleans (inherent, residual), with True for success, False for fail
     """
@@ -68,8 +67,7 @@ def determine_execution(tac, exec_control, exploitability, execution_RV, coeffs)
     Determine "execution" (ATT&CK Execution, Persistence, Priv Escalation, Defensive Evasion, Cred Access, Discovery,
         Collection) success or failure
     :param tac: threat actor capability
-    :param exec_control_inherent: control against "execution" TTPs, inherent
-    :param exec_control_inherent: control against "execution" TTPs, residual
+    :param exec_control: control against "execution" TTPs
     :param exploitability: exploitability metric
     :param execution_RV: Execution random variable
     :param coeffs: threat actor capability versus Control Effectiveness fit coefficients
@@ -93,8 +91,7 @@ def determine_movement(tac, movement_control, exploitability, movement_RV, coeff
     """
     Determine "movement" (ATT&CK Lateral Movement) success or failure
     :param tac: threat actor capability
-    :param movement_control_inherent: control against "movement" TTPs, inherent
-    :param movement_control_resdiual: control against "movement" TTPs, residual
+    :param movement_control: control against "movement" TTPs
     :param exploitability: exploitability metric
     :param movement_RV: Movement random variable
     :param coeffs: threat actor capability versus Control Effectiveness fit coefficients
@@ -118,10 +115,9 @@ def determine_impact(impact_control, entity):
     """
     Determine "impact" (ATT&CK C&C, Exfil, Impact) success or failure
     I = (1 - RR) * VAL
-    :param impact_control_inherent: control against "impact" TTPs, inherent
-    :param impact_control_residual: control against "impact" TTPs, residual
+    :param impact_control: control against "impact" TTPs
     :param entity: entity object
-    :return: A pair of impact values (inherent, residual)
+    :return: impact value
     """
     impact = entity.assets[0].value * (1 - impact_control)  # TODO this [0] is temporary
 
@@ -218,7 +214,7 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
     """
     Main routine to run CyRCE
     :param control_mode: controls mode, 'csf' or 'sp80053'
-    :param run_mode: list of ways to run, 'inherent' or 'residual' or ?
+    :param run_mode: list of ways to run, 'inherent' or 'residual' or ...
     :param cyrce_input: input object
     :return: outputs
     """
@@ -349,6 +345,9 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
         scenario.probability_scale_factor = scenario.probability_scale_factor * attackMotivator
 
     probability_scale_factor = scenario.probability_scale_factor
+
+    if scenario.attackLossType is None:
+        scenario.attackLossType = np.random.choice(['c', 'i', 'a'])  # pick a loss type randomly
 
     """
     Bayes to incorporate log data (a la ARM) (not in this version, but noted here for future)
