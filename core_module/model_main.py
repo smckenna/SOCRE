@@ -386,7 +386,9 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
     initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
     execution_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
 
+    # *************************************
     # Comment movement_RV to mimic vista
+    # *************************************
     movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
 
     detectRV = generate_pert_random_variables(modeValue=cyrce_input.csf.detect.value,
