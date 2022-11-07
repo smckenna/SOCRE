@@ -30,11 +30,6 @@ class Network(object):
             all_paths.extend(self.find_all_paths(from_node, obj))
 
         all_paths = [ap for ap in all_paths if len(ap) > 0]
-        # if attack_type != 'SocialEng':
-        #    for ap in all_paths:
-        #        if 'endpoint' in ap:
-        #            ap.remove('endpoint')
-
         if len(all_paths) == 0:
             return None
 

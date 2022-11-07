@@ -228,7 +228,7 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
     if platform.uname()[1] == 'BAHG3479J3':
         random_seed = INPUTS['random_seed']
         logger = logging.getLogger('Main')
-        logger.setLevel(level=logging.DEBUG)
+        logger.setLevel(level=logging.INFO)
     else:
         logger = logging.getLogger('Main')
         logger.setLevel(level=logging.INFO)
@@ -386,6 +386,8 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
 
     initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
     execution_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
+
+    # Comment movement_RV to mimic vista
     movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
 
     detectRV = generate_pert_random_variables(modeValue=cyrce_input.csf.detect.value,

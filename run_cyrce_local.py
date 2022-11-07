@@ -28,9 +28,9 @@ if __name__ == '__main__':
                            IDRA=IDRA(0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
                            IDRM=IDRM(0.8, 0.8, 0.8, 0.8),
                            IDSC=IDSC(0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
-                           value=0.5
+                           value=0.2
                            )
-    protect = CsfProtect(value=0.5,
+    protect = CsfProtect(value=0.2,
                          PRAC=PRAC(value=0.4, PRAC1=0.4, PRAC2=0.4, PRAC3=0.4, PRAC4=0.4, PRAC5=0.4, PRAC6=0.4,
                                    PRAC7=0.4),
                          PRAT=PRAT(value=0.4, PRAT1=0.4, PRAT2=0.4, PRAT3=0.4, PRAT4=0.4, PRAT5=0.4),
@@ -42,7 +42,7 @@ if __name__ == '__main__':
                          PRMA=PRMA(value=0.4, PRMA1=0.4, PRMA2=0.4),
                          PRPT=PRPT(value=0.4, PRPT1=0.4, PRPT2=0.4, PRPT3=0.4, PRPT4=0.4, PRPT5=0.4)
                          )
-    detect = CsfDetect(value=0.5,
+    detect = CsfDetect(value=0.2,
                        DEAE=DEAE(value=0.4, DEAE1=0.4, DEAE2=0.4, DEAE3=0.4, DEAE4=0.4, DEAE5=0.4),
                        DECM=DECM(value=0.4, DECM1=0.4, DECM2=0.4, DECM3=0.4, DECM4=0.4, DECM5=0.4, DECM6=0.4, DECM7=0.4,
                                  DECM8=0.4),
