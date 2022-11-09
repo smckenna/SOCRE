@@ -1,5 +1,5 @@
 import logging
-
+import random
 import numpy as np
 from netaddr import *
 
@@ -20,8 +20,9 @@ class Network(object):
         self.list_of_network_groups = []
         self.__set_up_network_groups()
 
-    def from_node_to_node(self, from_node, objective_list, network_model, failed_node_list):
+    def from_node_to_node(self, from_node, objective_list, network_model, failed_node_list, random_seed):
 
+        np.random.seed(random_seed)
         objective = [_.network_group for _ in objective_list]
 
         # Find all paths from the from_node to each to_node
