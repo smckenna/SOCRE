@@ -1,15 +1,12 @@
 """
 Cyber Risk Computational Engine - CyCRE
 """
+
 import os
 import platform
 from collections import OrderedDict
 
 import networkx as nx
-import os
-import platform
-from collections import OrderedDict
-import numpy as np
 import pandas as pd
 from scipy import interpolate
 from scipy.stats import poisson
@@ -228,7 +225,7 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
     if platform.uname()[1] == 'BAHG3479J3':
         random_seed = INPUTS['random_seed']
         logger = logging.getLogger('Main')
-        logger.setLevel(level=logging.INFO)
+        logger.setLevel(level=logging.DEBUG)
     else:
         logger = logging.getLogger('Main')
         logger.setLevel(level=logging.INFO)
