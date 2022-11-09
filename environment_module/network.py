@@ -1,6 +1,5 @@
 import logging
 import random
-
 import numpy as np
 from netaddr import *
 
@@ -32,19 +31,15 @@ class Network(object):
             all_paths.extend(self.find_all_paths(from_node, obj))
 
         all_paths = [ap for ap in all_paths if len(ap) > 0]
-        # if attack_type != 'SocialEng':
-        #    for ap in all_paths:
-        #        if 'endpoint' in ap:
-        #            ap.remove('endpoint')
-
         if len(all_paths) == 0:
             return None
 
         # Original scheme was to choose "best" next hop, based on "ROI"
         to_mg = None
         ct = 0
-        while ct < 3:  # TODO what should this be?
-            p = random.choice(all_paths)
+        while ct < 5:  # TODO what should this be?  prob a function of network size
+            p_ = np.random.choice(np.arange(0, len(all_paths)))
+            p = all_paths[p_]
             path = [n for n in p if n != 'hub']
             if len(path) == 1:
                 ng = path[0]
@@ -88,12 +83,11 @@ class Network(object):
     def __set_up_network_groups(self):
 
         logger = logging.getLogger('Main')
-        logger.setLevel(level=logging.DEBUG)
 
-        logger.info("      " + str(len(self.graph.nodes)) + " network nodes with " + str(len(self.graph.edges)) +
-                    " edges loaded")
+        logger.debug(str(len(self.graph.nodes)) + " network nodes with " + str(len(self.graph.edges)) +
+                     " edges loaded")
 
-        logger.info("      Setting up IP addresses for model ...")
+        logger.debug("Setting up IP addresses for model ...")
         for n in self.graph.nodes:
             network_group = NetworkGroup(n)
             network_group.assets = []
@@ -114,7 +108,6 @@ class Network(object):
     def assign_assets_to_network_groups(self, asset_list):
 
         logger = logging.getLogger('Main')
-        logger.setLevel(level=logging.DEBUG)
 
         located = 0
         all_ips = []
@@ -147,11 +140,11 @@ class Network(object):
                     orphanGroup = ng
                     continue
 
-        logger.info("         " + str(located) + " of " + str(len(asset_list)) + " assets placed into network model")
-        logger.info("         " + str(len(orphans)) + " orphan assets identified")
+        logger.debug("    " + str(located) + " of " + str(len(asset_list)) + " assets placed into network model")
+        logger.debug("    " + str(len(orphans)) + " orphan assets identified")
 
         if len(orphans) > 0:
-            if orphan_group_exists == False:
+            if not orphan_group_exists:
                 orphanGroup = NetworkGroup('orphans')
                 orphanGroup.machine_groups = []
                 orphanGroup.assets = orphans
@@ -162,7 +155,6 @@ class Network(object):
     def assign_assets_to_machine_groups(self):
 
         logger = logging.getLogger('Main')
-        logger.setLevel(level=logging.DEBUG)
 
         for ng in self.list_of_network_groups:
 
@@ -178,7 +170,7 @@ class Network(object):
                 continue
 
             group_count = 0
-            logger.info("      Assigning assets to machine groups within " + ng.label)
+            logger.debug("Assigning assets to machine groups within " + ng.label)
             asset_count = 0
             for os in unique_os:
                 mg_assets = list(set([a for a in ng.assets if a.properties['os'] == os]))
@@ -194,12 +186,12 @@ class Network(object):
                     ng.machine_groups.append(mg)
 
                     group_count += 1
-            logger.info("         " + str(group_count) + " machine groups with a total of " + str(asset_count) + " assets")
+            logger.debug(
+                "    " + str(group_count) + " machine groups with a total of " + str(asset_count) + " assets")
 
         # Handle orphans
         try:
             orphans = orphanGroup.assets
         except:
-            logging.info("      " + "No orphan assets found :)")
+            logging.debug("    " + "No orphan assets found :)")
             return
-
