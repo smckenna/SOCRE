@@ -1,0 +1,9 @@
+*.pkl
+*.pyc
+*.xlsx
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
