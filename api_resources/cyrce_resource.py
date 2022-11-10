@@ -27,7 +27,7 @@ class CyrceResource(Resource):
         response = run_cyrce(control_mode=control_mode, cyrce_input=cyrce_input, run_mode=run_mode)
         return response.reprJSON()
 
-    def json_to_input(self, control_mode, json_data):
+    def json_to_input(self, json_data, control_mode='csf'):
         attackMotivators = AttackMotivators(
             appeal=json_data['attackMotivators']['appeal'],
             targeting=json_data['attackMotivators']['targeting'],

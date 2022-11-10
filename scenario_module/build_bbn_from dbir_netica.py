@@ -3,7 +3,6 @@ import os
 import pandas as pd
 from pybbn.graph.dag import Bbn
 from pybbn.graph.edge import Edge, EdgeType
-from pybbn.graph.jointree import EvidenceBuilder
 from pybbn.graph.node import BbnNode
 from pybbn.graph.variable import Variable
 from pybbn.pptc.inferencecontroller import InferenceController
@@ -23,16 +22,16 @@ incident = BbnNode(Variable(0, 'incident', ['T', 'F']), [aprioriProbability, 1 -
 
 action = BbnNode(Variable(1, 'action', ['error', 'hacking', 'malware', 'misuse', 'social']), flatten_list(regionActionData.to_numpy().tolist()))
 impactType = BbnNode(Variable(3, 'impactType', ['c', 'i', 'a']), flatten_list(lossData.to_numpy().tolist()))
-threatType = BbnNode(Variable(2, 'threatType', ['threatactor', 'insider', 'thirdParty']), flatten_list(actionActorData.to_numpy().tolist()))
+threatType = BbnNode(Variable(2, 'threatType', ['threatactor', 'insider', 'thirdparty']), flatten_list(actionActorData.to_numpy().tolist()))
 geography = BbnNode(Variable(4, 'geography', ['apac', 'emea', 'lac', 'na']), flatten_list(regionData.to_numpy().tolist()))
 size = BbnNode(Variable(6, 'size', ['small', 'large']), flatten_list(industrySizeData.to_numpy().tolist()))
 industry = BbnNode(Variable(5, 'industry', ['accommodation', 'administrative', 'construction',
                                             'education', 'entertainment',
                                             'finance', 'healthcare',
                                             'information', 'manufacturing',
-                                            'mining', 'other services',
-                                            'professional', 'public administration',
-                                            'real estate', 'retail',
+                                            'miningandutilities', 'otherservices',
+                                            'professional', 'publicadministration',
+                                            'realestate', 'retail',
                                             'transportation']), flatten_list(actionIndustryData.to_numpy().tolist()))
 
 bbn = Bbn() \
@@ -107,11 +106,11 @@ verbose = True
 #         .with_evidence(orgSize, 1.0) \
 #         .build()
 #     join_tree.set_observation(ev6)
-ev7 = EvidenceBuilder() \
-    .with_node(join_tree.get_bbn_node_by_name('incident')) \
-    .with_evidence('T', 1.0) \
-    .build()
-join_tree.set_observation(ev7)
+# ev7 = EvidenceBuilder() \
+#     .with_node(join_tree.get_bbn_node_by_name('incident')) \
+#     .with_evidence('T', 1.0) \
+#     .build()
+# join_tree.set_observation(ev7)
 
 # print all the marginal probabilities
 for node, posteriors in join_tree.get_posteriors().items():
