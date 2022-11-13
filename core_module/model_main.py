@@ -224,7 +224,7 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
     if platform.uname()[1] == 'BAHG3479J3':
         random_seed = INPUTS['random_seed']
         logger = logging.getLogger('Main')
-        logger.setLevel(level=logging.INFO)
+        logger.setLevel(level=logging.DEBUG)
     else:
         logger = logging.getLogger('Main')
         logger.setLevel(level=logging.INFO)
@@ -237,7 +237,6 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
 
     numberOfMonteCarloRuns = INPUTS['numberOfMonteCarloRuns']
     impactCalcMode = INPUTS['impactCalcMode']
-    riskMode = INPUTS['riskMode']
     coeffs = INPUTS['tac_v_ctrl_coeffs']
 
     # Compute total impact from direct and indirect
@@ -290,6 +289,9 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
     attackThreatType = cyrce_input.scenario.attackThreatType
     orgSize = cyrce_input.scenario.orgSize
 
+    if attackAction == 'error' or attackAction == 'misuse':
+        threat_actor.attempt_limit = 1
+
     bbn_file = os.path.join(os.path.dirname(__file__), INPUTS['bbn_file'])
 
     scenario = ScenarioModel.Scenario(attackAction=attackAction, attackThreatType=attackThreatType,
@@ -330,21 +332,16 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
     # TODO make these entries optional, if that is deemed a good idea, then update them as below if there is info to
     # TODO use for the update, o/w use baseline
     # Compute Attack Motivator metric
-    attackMotivator = np.mean([cyrce_input.attackMotivators.reward,  # TODO weights?
-                               cyrce_input.attackMotivators.appeal,
-                               cyrce_input.attackMotivators.targeting,
-                               cyrce_input.attackMotivators.perceivedDefenses])
+    attackMotivator0 = 0.5  # baseline value of 0.5
+    attackMotivator_ = np.mean([cyrce_input.attackMotivators.reward,  # TODO weights?
+                                cyrce_input.attackMotivators.appeal,
+                                cyrce_input.attackMotivators.targeting,
+                                cyrce_input.attackMotivators.perceivedDefenses])
+    attackMotivator, _ = update_metric(attackMotivator0, attackMotivator_)
 
     probability_scale_factor0 = scenario.probability_scale_factor
 
-    # Handle type of analysis
-    if 'cert' in riskMode:
-        scenario.probability_scale_factor = 1.
-    elif 'prob' in riskMode:
-        # Update the initial starting value of the scenario_probability_scale_factor using the Attack Motivator metric
-        scenario.probability_scale_factor = scenario.probability_scale_factor * attackMotivator
-
-    probability_scale_factor = scenario.probability_scale_factor
+    probability_scale_factor = scenario.probability_scale_factor * attackMotivator
 
     if scenario.attackLossType is None:
         scenario.attackLossType = np.random.choice(['c', 'i', 'a'])  # pick a loss type randomly
@@ -456,20 +453,25 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
 
                 while tryCount <= threat_actor.attempt_limit:
 
-                    if initial_access:
-                        nextNode = network_model.from_node_to_node(from_node=attackDictElement['origin'],
-                                                                   objective_list=attackDictElement['entryPoint'],
-                                                                   network_model=network_model,
-                                                                   failed_node_list=failedNodeList)
-                        if nextNode is not None:
-                            logger.debug(' ' + attackDictElement['origin'] + ' ---?--> ' + nextNode.label)
+                    if attackAction == 'error' or attackAction == 'misuse':
+                        from_node = attackDictElement['entryPoint']
+                        objective_node = attackDictElement['destination']
+                        logger_from_string = attackDictElement['entryPoint']
+                    elif initial_access:
+                        from_node = attackDictElement['origin']
+                        objective_node = attackDictElement['entryPoint']
+                        logger_from_string = attackDictElement['origin']
                     else:
-                        nextNode = network_model.from_node_to_node(from_node=currentNode.network_group,
-                                                                   objective_list=attackDictElement['destination'],
-                                                                   network_model=network_model,
-                                                                   failed_node_list=failedNodeList)
-                        if nextNode is not None:
-                            logger.debug(' ' + currentNode.label + ' ---?--> ' + nextNode.label)
+                        from_node = currentNode
+                        objective_node = attackDictElement['destination']
+                        logger_from_string = currentNode
+
+                    nextNode = network_model.from_node_to_node(from_node=from_node,
+                                                               objective_list=objective_node,
+                                                               network_model=network_model,
+                                                               failed_node_list=failedNodeList)
+                    if nextNode is not None:
+                        logger.debug(' ' + logger_from_string + ' ----> ' + nextNode.label)
 
                     if nextNode is None:
                         tryCount += 1

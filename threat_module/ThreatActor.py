@@ -1,4 +1,5 @@
 from uuid import uuid4
+
 import numpy as np
 
 
@@ -76,6 +77,8 @@ class ThreatActor:
         self.attempt_limit = max(1, int(self.properties['determination'] * 10))
 
     def set_capability(self, cyrce_input):
+        if cyrce_input.scenario.attackAction == 'error':
+            cyrce_input.threatActorInput.determinationWeight = 0
         self.properties['capability'] = np.sum((
             self.properties['determination'] * cyrce_input.threatActorInput.determinationWeight,
             self.properties['resources'] * cyrce_input.threatActorInput.resourcesWeight,

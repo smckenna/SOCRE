@@ -4,8 +4,6 @@ INPUTS = {
     'bbn_file': '../scenario_module/scenario_bbn_dbir.json',
     'assets_file': './model_resources/atomic_assets.csv',
     'impactCalcMode': 'mean',  # mean or max
-    'riskMode': 'probabilistic',  # certainty or probabilistic
-    'timeWindow': 1,  # 1 year
     'random_seed': 101798,
     'confidenceAlpha': 0.05,
     'scoring_lambda': 0.2,
