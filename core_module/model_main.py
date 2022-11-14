@@ -579,14 +579,14 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
             a.risk = np.mean(a.risk_vec)
 
             # SPM diagnostics
-            # print("--------------------------------")
-            # print("lh = " + str(np.round(a.lh, 4)))
-            # print("imp = " + str(np.round(a.imp, 4)))
-            # print("risk = " + str(np.round(a.risk, 4)))
-            # print("risk_CI = " + str(np.round(a.risk_confInt, 4)))
-            # print("riskLevel = " + str(np.round(a.riskLevel, 2)))
-            # print("riskLevel_CI = " + str(np.round(a.riskLevel_confInt, 2)))
-            # print("--------------------------------")
+            print("--------------------------------")
+            print("lh = " + str(np.round(a.lh, 4)))
+            print("imp = " + str(np.round(a.imp, 4)))
+            print("risk = " + str(np.round(a.risk, 4)))
+            print("risk_CI = " + str(np.round(a.risk_confInt, 4)))
+            print("riskLevel = " + str(np.round(a.riskLevel, 2)))
+            print("riskLevel_CI = " + str(np.round(a.riskLevel_confInt, 2)))
+            print("--------------------------------")
 
             logger.debug('output: ' + str(CyrceOutput(
                 overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
