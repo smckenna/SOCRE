@@ -5,7 +5,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-from scipy.stats import uniform, boxcox
+from scipy.stats import uniform, boxcox_normmax
 
 from api_resources.cyrce_resource import CyrceResource
 from core_module.model_main import run_cyrce
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     with open('request.json') as file:
         json_data = json.load(file)
 
-    nMC = 10000
+    nMC = 20000
     test_list = []
     rng = np.random.default_rng()
     for i in np.arange(0, nMC):
@@ -46,10 +46,10 @@ if __name__ == '__main__':
         json_data['threatActor']['sophistication'] = rng.choice(["intermediate", "advanced", "expert", "innovator", "strategic"], size=1)[0]
         json_data['threatActor']['determination'] = rng.choice(["medium", "high"], size=1)[0]
         json_data['scenario']['attackThreatType'] = rng.choice(["threatactor", "insider", "thirdparty"], size=1, p=[0.43, 0.3, 0.27])[0]
-        if json_data['scenario']['attackThreatType'] == "insider":
-            json_data['scenario']['attackAction'] = rng.choice(["misuse", "error"], size=1)[0]
-        elif json_data['scenario']['attackThreatType'] != "insider":
+        if json_data['scenario']['attackThreatType'] == "threatactor":
             json_data['scenario']['attackAction'] = rng.choice(["malware", "hacking", "social"], size=1)[0]
+        else:
+            json_data['scenario']['attackAction'] = rng.choice(["malware", "hacking", "social", "misuse", "error"], size=1)[0]
         json_data['scenario']['attackLossType'] = rng.choice(["c", "i", "a"])[0]
         json_data['directImpact']['initialResponseCost'] = generate_uniform_random_variables_scaled(lower=0.5*5, upper=1*5, nIterations=1)
         json_data['directImpact']['productivityLoss'] = generate_uniform_random_variables_scaled(lower=0.5*5, upper=1*5, nIterations=1)
@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     results = Parallel(n_jobs=N, verbose=10)(delayed(run_cyrce)(i, j, k) for (i, j, k) in zip(test_list, ['csf']*nMC, ['residual']*nMC))
     r = []
-    outfile = 'score_calibration/results10k_rev1.csv'
+    outfile = 'score_calibration/results20k_rev2.csv'
     with open(outfile, 'w+') as file:
         for foo in range(nMC):
             r.append(results[foo].overallInherentLikelihood.value * results[foo].overallInherentImpact.value)
@@ -111,10 +111,10 @@ if __name__ == '__main__':
         df = pd.read_csv(file, header=None)
     lh = df.iloc[:, 1]
     im = df.iloc[:, 3]
-    r = np.multiply(lh, im).tolist()
+    r = np.multiply(lh, im).dropna()
 
-    transformed_r, best_lambda = boxcox(r)
-    #best_lambda = 0.193
+    best_lambda = boxcox_normmax(r)
+    #best_lambda = 0.255
     print("lambda = " + str(best_lambda))
     x = np.quantile(np.power(r, best_lambda), [.001, .1, .50, .9, .999])
     y = np.linspace(0, 5, 5)

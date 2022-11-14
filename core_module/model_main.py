@@ -453,11 +453,7 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
 
                 while tryCount <= threat_actor.attempt_limit:
 
-                    if attackAction == 'error' or attackAction == 'misuse':
-                        from_node = attackDictElement['entryPoint']
-                        objective_node = attackDictElement['destination']
-                        logger_from_string = attackDictElement['entryPoint']
-                    elif initial_access:
+                    if initial_access:
                         from_node = attackDictElement['origin']
                         objective_node = attackDictElement['entryPoint']
                         logger_from_string = attackDictElement['origin']
@@ -485,10 +481,13 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
 
                     # Determine if threat actor gains INITIAL ACCESS
                     if initial_access:
-                        access = determine_initial_access(threat_actor.properties['capability'],
-                                                          protectDetectRV[iteration],
-                                                          vulnerabilityRV[iteration],
-                                                          initial_access_RV[iteration], coeffs)
+                        if (attackAction == 'error') or (attackAction == 'misuse'):
+                            access = True  # these are for insider, who has initial access
+                        else:
+                            access = determine_initial_access(threat_actor.properties['capability'],
+                                                              protectDetectRV[iteration],
+                                                              vulnerabilityRV[iteration],
+                                                              initial_access_RV[iteration], coeffs)
                     else:  # Determine if threat actor moves to next node
                         access = determine_movement(threat_actor.properties['capability'],
                                                     protectDetectRV[iteration],

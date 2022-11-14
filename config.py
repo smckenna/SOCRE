@@ -6,8 +6,8 @@ INPUTS = {
     'impactCalcMode': 'mean',  # mean or max
     'random_seed': 101798,
     'confidenceAlpha': 0.05,
-    'scoring_lambda': 0.2,
-    'scoring_fit': [11.80, -2.95],
+    'scoring_lambda': 0.255,
+    'scoring_fit': [10.569, -1.155],
     'tac_v_ctrl_coeffs': [0.174147,
                           -0.931719,
                           2.339254,
