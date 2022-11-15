@@ -27,7 +27,7 @@ class Network(object):
         # Find all paths from the from_node to each to_node
         all_paths = []
         for obj in objective:
-            all_paths.extend(self.find_all_paths(from_node, obj))
+            all_paths.extend(self.find_all_paths(from_node.network_group, obj))
 
         all_paths = [ap for ap in all_paths if len(ap) > 0]
         if len(all_paths) == 0:
@@ -156,6 +156,14 @@ class Network(object):
         logger = logging.getLogger('Main')
 
         for ng in self.list_of_network_groups:
+
+            if ng.label == 'internet':
+                mg = MachineGroup(label='internet_mg', network_group=ng)
+                mg.assets = []
+                mg.network_group = ng.label
+                mg.node = ng.node
+                ng.machine_groups.append(mg)
+                continue
 
             if ng.label == 'orphans':
                 orphanGroup = ng

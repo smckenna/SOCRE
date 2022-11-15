@@ -427,7 +427,7 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
         for iteration in range(0, numberOfMonteCarloRuns):
 
             tryCount = 1
-            origin = 'internet'
+            origin = network_model.list_of_network_groups[0].machine_groups[0]  # = internet
             destination = attack_mg_target
             entryNode = attack_mg_target
 
@@ -456,11 +456,11 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
                     if initial_access:
                         from_node = attackDictElement['origin']
                         objective_node = attackDictElement['entryPoint']
-                        logger_from_string = attackDictElement['origin']
+                        logger_from_string = attackDictElement['origin'].label
                     else:
                         from_node = currentNode
                         objective_node = attackDictElement['destination']
-                        logger_from_string = currentNode
+                        logger_from_string = currentNode.label
 
                     nextNode = network_model.from_node_to_node(from_node=from_node,
                                                                objective_list=objective_node,
