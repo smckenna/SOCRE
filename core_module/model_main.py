@@ -256,6 +256,9 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
 
     # Set up threat actor
     threat_actor = ThreatActor(type=cyrce_input.scenario.attackThreatType)
+    if cyrce_input.scenario.attackAction == 'error':  # current approach to error case
+        cyrce_input.threatActorInput.determination = 0
+        cyrce_input.threatActorInput.determinationWeight = 0
     threat_actor.assign_property('sophistication', cyrce_input.threatActorInput.sophistication)
     threat_actor.assign_property('resources', cyrce_input.threatActorInput.resources)
     threat_actor.assign_property('determination', cyrce_input.threatActorInput.determination)
@@ -288,9 +291,6 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
     attackLossType = cyrce_input.scenario.attackLossType
     attackThreatType = cyrce_input.scenario.attackThreatType
     orgSize = cyrce_input.scenario.orgSize
-
-    if attackAction == 'error' or attackAction == 'misuse':
-        threat_actor.attempt_limit = 1
 
     bbn_file = os.path.join(os.path.dirname(__file__), INPUTS['bbn_file'])
 
@@ -559,11 +559,8 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
                                                                        alpha=INPUTS['confidenceAlpha'])), 0)
             # Computing variances
             a.LH_var = float(np.var(a.lh_vec))
-
             a.imp_var = float(np.var(a.imp_vec))
-
             a.risk_var = np.var(a.risk_vec)
-
             a.riskLevel_var = np.var(riskLevel_vec)
 
             if INPUTS['scoring_lambda'] == 0:

@@ -133,6 +133,7 @@ for node in join_tree.get_bbn_nodes():
 #print(round(posteriorProbability * 100, 2))
 print(round(potentialOut * 100, 2))
 bbn.to_json(bbn, 'C:\\Users\\570835\\PycharmProjects\\CyberRiskComputationalEngine\\scenario_module\\scenario_bbn_dbir.json')
+bbn.to_json(bbn, 'C:\\Users\\570835\\PycharmProjects\\CyberSaint\\ba-risk-model\\bah\\model\\scenario_module\\scenario_bbn_dbir.json')
 
 if False:
     n, d = bbn.to_nx_graph()

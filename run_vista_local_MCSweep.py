@@ -39,13 +39,18 @@ if __name__ == '__main__':
         json_data['attackMotivators']['targeting'] = generate_uniform_random_variables_scaled(lower=0.3*5, upper=0.9*5, nIterations=1)
         json_data['attackMotivators']['reward'] = generate_uniform_random_variables_scaled(lower=0.3*5, upper=0.9*5, nIterations=1)
         json_data['attackMotivators']['perceivedDefenses'] = generate_uniform_random_variables_scaled(lower=0.3*5, upper=0.9*5, nIterations=1)
-        json_data['exploitability']['easeOfExploit'] = generate_uniform_random_variables_scaled(lower=0.3*5, upper=0.9*5, nIterations=1)
-        json_data['attackSurface']['awareness'] = generate_uniform_random_variables_scaled(lower=0.3*5, upper=0.9*5, nIterations=1)
-        json_data['attackSurface']['opportunity'] = generate_uniform_random_variables_scaled(lower=0.3*5, upper=0.9*5, nIterations=1)
+        if json_data['scenario']['attackThreatType'] == "error":
+            json_data['exploitability']['easeOfExploit'] = generate_uniform_random_variables_scaled(lower=0.7*5, upper=0.1*5, nIterations=1)
+            json_data['attackSurface']['awareness'] = generate_uniform_random_variables_scaled(lower=0.8*5, upper=0.1*5, nIterations=1)
+            json_data['attackSurface']['opportunity'] = generate_uniform_random_variables_scaled(lower=0.8*5, upper=0.1*5, nIterations=1)
+        else:
+            json_data['exploitability']['easeOfExploit'] = generate_uniform_random_variables_scaled(lower=0.7*5, upper=0.1*5, nIterations=1)
+            json_data['attackSurface']['awareness'] = generate_uniform_random_variables_scaled(lower=0.8*5, upper=0.1*5, nIterations=1)
+            json_data['attackSurface']['opportunity'] = generate_uniform_random_variables_scaled(lower=0.8*5, upper=0.1*5, nIterations=1)
         json_data['threatActor']['resources'] = rng.choice(["individual", "organization", "government"], size=1)[0]
         json_data['threatActor']['sophistication'] = rng.choice(["intermediate", "advanced", "expert", "innovator", "strategic"], size=1)[0]
         json_data['threatActor']['determination'] = rng.choice(["medium", "high"], size=1)[0]
-        json_data['scenario']['attackThreatType'] = rng.choice(["threatactor", "insider", "thirdparty"], size=1, p=[0.43, 0.3, 0.27])[0]
+        json_data['scenario']['attackThreatType'] = rng.choice(["threatactor", "insider", "thirdparty"], size=1, p=[0.82, 0.11, 0.07])[0]  # values from BBN, incident = true
         if json_data['scenario']['attackThreatType'] == "threatactor":
             json_data['scenario']['attackAction'] = rng.choice(["malware", "hacking", "social"], size=1)[0]
         else:
@@ -70,7 +75,7 @@ if __name__ == '__main__':
 
     results = Parallel(n_jobs=N, verbose=10)(delayed(run_cyrce)(i, j, k) for (i, j, k) in zip(test_list, ['csf']*nMC, ['residual']*nMC))
     r = []
-    outfile = 'score_calibration/results20k_rev2.csv'
+    outfile = 'score_calibration/results20k_rev3.csv'
     with open(outfile, 'w+') as file:
         for foo in range(nMC):
             r.append(results[foo].overallInherentLikelihood.value * results[foo].overallInherentImpact.value)

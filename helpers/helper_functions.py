@@ -4,6 +4,7 @@ import os
 from shutil import copyfileobj
 
 import numpy as np
+import pandas as pd
 import requests
 from netaddr import *
 from pandas import read_excel
@@ -15,6 +16,19 @@ from config import INPUTS
 
 
 # np.seterr(all='raise')
+
+def fetch_mitre_nist(version=10, local=True):
+    if local:
+        if version == 9:
+            local_filename = 'nist800-53-r5-mappings_v9.csv'
+        else:
+            local_filename = 'nist800-53-r5-mappings_v10.csv'
+
+        ttp_to_controls = pd.read_csv(local_filename)
+    else:
+        ttp_to_controls = None
+    return ttp_to_controls
+
 
 def generate_pert_random_variables(modeValue=0.5, gamma=2.0, nIterations=1000):
     """
@@ -318,4 +332,3 @@ def create_dir(directory):
 
 def unique_list(x):
     return list(set(x))
-
