@@ -357,7 +357,7 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
     # MODEL: power = ~rate * force;  P = F * V
     threatLevel = compute_metric(probability_scale_factor, threat_actor.properties['capability'], method="harmonic")
 
-    # Pre-allocate space for trscking dict
+    # Pre-allocate space for tracking dict
     attackDict = OrderedDict((k, {}) for k in range(numberOfMonteCarloRuns))
 
     # TODO using this idea, but not sold on it
@@ -380,7 +380,7 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
                                                       nIterations=numberOfMonteCarloRuns)
     attackSurfaceRV = generate_pert_random_variables(modeValue=attackSurface,
                                                      nIterations=numberOfMonteCarloRuns)
-#    vulnerabilityRV = np.multiply(exploitabilityRV, attackSurfaceRV)
+
     vulnerabilityRV = compute_metric(exploitabilityRV, attackSurfaceRV, method='geometric')
 
     initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
@@ -584,7 +584,7 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
             a.risk = np.mean(a.risk_vec)
 
             # SPM diagnostics
-            if not sweep: 
+            if not sweep:
                 print("--------------------------------")
                 print("lh = " + str(np.round(a.lh, 4)))
                 print("imp = " + str(np.round(a.imp, 4)))
