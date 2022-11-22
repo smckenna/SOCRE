@@ -17,6 +17,18 @@ from config import INPUTS
 
 # np.seterr(all='raise')
 
+def compute_metric(exploitability, attack_surface, method='multiply'):
+    if method == 'multiply':
+        v = exploitability * attack_surface
+    elif method == 'geometric':
+        v = np.sqrt(exploitability * attack_surface)
+    elif method == 'harmonic':
+        v = 2. * exploitability * attack_surface / (exploitability + attack_surface)
+    else:
+        v = exploitability * attack_surface
+    return v
+
+
 def fetch_mitre_nist(version=10, local=True):
     if local:
         if version == 9:

@@ -1,6 +1,8 @@
 from uuid import uuid4
+
 import numpy as np
-from helpers.helper_functions import flatten_list
+
+from helpers.helper_functions import flatten_list, compute_metric
 
 """
 self.type = 'critical_entity'
@@ -563,6 +565,9 @@ class EntityGroup:
         self.owner = None
         self.properties = dict()
         self.critical = critical
+        self.exploitability = 0.5
+        self.attack_surface = 0.5
+        self.vulnerability = compute_metric(self.exploitability, self.attack_surface, method='geometric')
 
     def add_entity(self, entity_list):
         self.list_of_entities = self.list_of_entities + entity_list

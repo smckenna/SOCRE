@@ -14,7 +14,7 @@ from config import INPUTS
 from entity_module.Entity import *
 from environment_module.network import *
 from helpers.helper_functions import get_confidence_interval, flatten_list, generate_pert_random_variables, \
-    generate_uniform_random_variables
+    generate_uniform_random_variables, compute_metric
 from output_module.cyrce_output import CyrceOutput, ValueVar
 from scenario_module import ScenarioModel
 from threat_module.ThreatActor import ThreatActor
@@ -210,7 +210,7 @@ def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
     return x11, p11
 
 
-def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
+def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=False):
     """
     Main routine to run CyRCE
     :param control_mode: controls mode, 'csf' or 'sp80053'
@@ -230,6 +230,8 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
         logger.setLevel(level=logging.INFO)
         rng = np.random.default_rng()
         random_seed = int(rng.random() * 100000)
+    if sweep:
+        logger.setLevel(level=logging.INFO)
 
     np.random.seed(random_seed)
 
@@ -353,7 +355,7 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
 
     # Compute Threat Level; only used as a reporting metric
     # MODEL: power = ~rate * force;  P = F * V
-    threatLevel = probability_scale_factor * threat_actor.properties['capability']
+    threatLevel = compute_metric(probability_scale_factor, threat_actor.properties['capability'], method="harmonic")
 
     # Pre-allocate space for trscking dict
     attackDict = OrderedDict((k, {}) for k in range(numberOfMonteCarloRuns))
@@ -370,18 +372,24 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
     exploitability, _ = update_metric(exploitability0, exploitability_)
 
     # Compute Vulnerability metrics
-    # MODEL:  flux = porosity * area * gradient(=1)
-    vulnerability = exploitability * attackSurface
+    # MODEL:  flux = permeability * area * gradient(=1)
+    vulnerability = compute_metric(exploitability, attackSurface, method='geometric')
 
     # Get random variable samples ahead of the MCS
     exploitabilityRV = generate_pert_random_variables(modeValue=exploitability,
                                                       nIterations=numberOfMonteCarloRuns)
     attackSurfaceRV = generate_pert_random_variables(modeValue=attackSurface,
                                                      nIterations=numberOfMonteCarloRuns)
-    vulnerabilityRV = np.multiply(exploitabilityRV, attackSurfaceRV)
+#    vulnerabilityRV = np.multiply(exploitabilityRV, attackSurfaceRV)
+    vulnerabilityRV = compute_metric(exploitabilityRV, attackSurfaceRV, method='geometric')
 
     initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
     execution_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
+
+    for a in all_entities.list:
+        a.assign_properties('exploitability', exploitability)
+        a.assign_properties('attack_surface', attackSurface)
+        a.assign_properties('vulnerability', compute_metric(exploitability, attackSurface, method='geometric'))
 
     # *************************************
     # Comment movement_RV to mimic vista
@@ -576,32 +584,33 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual']):
             a.risk = np.mean(a.risk_vec)
 
             # SPM diagnostics
-            print("--------------------------------")
-            print("lh = " + str(np.round(a.lh, 4)))
-            print("imp = " + str(np.round(a.imp, 4)))
-            print("risk = " + str(np.round(a.risk, 4)))
-            print("risk_CI = " + str(np.round(a.risk_confInt, 4)))
-            print("riskLevel = " + str(np.round(a.riskLevel, 2)))
-            print("riskLevel_CI = " + str(np.round(a.riskLevel_confInt, 2)))
-            print("--------------------------------")
+            if not sweep: 
+                print("--------------------------------")
+                print("lh = " + str(np.round(a.lh, 4)))
+                print("imp = " + str(np.round(a.imp, 4)))
+                print("risk = " + str(np.round(a.risk, 4)))
+                print("risk_CI = " + str(np.round(a.risk_confInt, 4)))
+                print("riskLevel = " + str(np.round(a.riskLevel, 2)))
+                print("riskLevel_CI = " + str(np.round(a.riskLevel_confInt, 2)))
+                print("--------------------------------")
 
-            logger.debug('output: ' + str(CyrceOutput(
-                overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
-                overallResidualLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
-                overallInherentImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
-                overallResidualImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
-                overallInherentRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
-                overallResidualRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
-                attackSurface=float(attackSurface),
-                exploitability=exploitability,
-                vulnerability=vulnerability,
-                threatActorCapacity=threat_actor.properties['capability'],
-                threatLevel=float(np.mean(threatLevel)),
-                probability_scale_factor0=float(probability_scale_factor0),
-                probability_scale_factor=float(probability_scale_factor),
-                attackMotivators=float(attackMotivator),
-                directImpact=float(directImpactValue),
-                indirectImpact=float(indirectImpactValue))))
+                logger.debug('output: ' + str(CyrceOutput(
+                    overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+                    overallResidualLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+                    overallInherentImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+                    overallResidualImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+                    overallInherentRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
+                    overallResidualRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
+                    attackSurface=float(attackSurface),
+                    exploitability=exploitability,
+                    vulnerability=vulnerability,
+                    threatActorCapacity=threat_actor.properties['capability'],
+                    threatLevel=float(np.mean(threatLevel)),
+                    probability_scale_factor0=float(probability_scale_factor0),
+                    probability_scale_factor=float(probability_scale_factor),
+                    attackMotivators=float(attackMotivator),
+                    directImpact=float(directImpactValue),
+                    indirectImpact=float(indirectImpactValue))))
 
     return CyrceOutput(
         overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
