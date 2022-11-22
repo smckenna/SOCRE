@@ -1,13 +1,13 @@
 INPUTS = {
     'numberOfMonteCarloRuns': 1000,
-    'graph_model_file': '../model_resources/atomic_network_model.graphml',
+    'graph_model_file': '../model_resources/test_network_model.graphml',
     'bbn_file': '../scenario_module/scenario_bbn_dbir.json',
-    'assets_file': './model_resources/atomic_assets.csv',
+    'assets_file': './model_resources/assets.csv',
     'impactCalcMode': 'mean',  # mean or max
     'random_seed': 101798,
     'confidenceAlpha': 0.05,
-    'scoring_lambda': 0.299,
-    'scoring_fit': [9.48, -0.115],
+    'scoring_lambda': 0.2,
+    'scoring_fit': [7.841, -0.264],
     'tac_v_ctrl_coeffs': [0.174147,
                           -0.931719,
                           2.339254,

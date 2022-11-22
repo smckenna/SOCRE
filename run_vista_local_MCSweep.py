@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     results = Parallel(n_jobs=N, verbose=10)(delayed(run_cyrce)(i, j, k, m) for (i, j, k, m) in zip(test_list, ['csf']*nMC, ['residual']*nMC, ['True']*nMC))
     r = []
-    outfile = 'score_calibration/atomic_results20k_rev5.csv'
+    outfile = 'score_calibration/test_results10k_rev5.csv'
     with open(outfile, 'w+') as file:
         for foo in range(nMC):
             r.append(results[foo].overallInherentLikelihood.value * results[foo].overallInherentImpact.value)
