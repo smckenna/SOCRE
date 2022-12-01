@@ -31,4 +31,4 @@ class NetworkGroup(object):
         self.exploitability = 0.5
         self.attack_surface = 0.5
         self.vulnerability = compute_metric(exploitability=self.exploitability,
-                                                   attack_surface=self.attack_surface, method='geometric')
+                                            attack_surface=self.attack_surface, method='geometric')

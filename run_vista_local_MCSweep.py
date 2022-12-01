@@ -32,7 +32,7 @@ if __name__ == '__main__':
     with open('request.json') as file:
         json_data = json.load(file)
 
-    nMC = 10000
+    nMC = 50000
     test_list = []
     rng = np.random.default_rng()
     for i in np.arange(0, nMC):
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     results = Parallel(n_jobs=N, verbose=10)(delayed(run_cyrce)(i, j, k, m) for (i, j, k, m) in zip(test_list, ['csf']*nMC, ['residual']*nMC, ['True']*nMC))
     r = []
-    outfile = 'score_calibration/test_results10k_rev5.csv'
+    outfile = 'score_calibration/test_results50k_rev6.csv'
     with open(outfile, 'w+') as file:
         for foo in range(nMC):
             r.append(results[foo].overallInherentLikelihood.value * results[foo].overallInherentImpact.value)
@@ -173,7 +173,7 @@ if __name__ == '__main__':
     x1 = r_xformed - min_r
     max_x1 = np.max(x1)
 
-    print("lambda = " + str(best_lambda))
+    print(f"lambda = {best_lambda}")
     # x = np.quantile(np.power(r, best_lambda), [.001, .1, .50, .9, .999])
     # y = np.linspace(0, 5, 5)
 
@@ -181,4 +181,4 @@ if __name__ == '__main__':
     # print("p = " + str(p))
     p = [5. / max_x1, -5. * min_r / max_x1]
 
-    print("p = " + str(p))
+    print(f"p = {p}")

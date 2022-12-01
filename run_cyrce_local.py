@@ -1,6 +1,9 @@
 import json
+import os
 
 from api_resources.cyrce_resource import CyrceResource
+from api_resources.ttp_coverage_resource import TtpCoverageResource
+from core_module.analysis import run_ttp_coverage_metric
 from core_module.model_main import run_cyrce
 from input_module.cyrce_input import CyrceInput, \
     AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, DirectImpact, Impact, IndirectImpact, \
@@ -103,7 +106,10 @@ if __name__ == '__main__':
     #output_csf_api = run_cyrce(control_mode='csf', cyrce_input=cy_res.json_to_input(control_mode='csf', json_data=json_data), run_mode=['residual', 'residual']).reprJSON()
     #output_80053_api = run_cyrce(control_mode='sp80053', cyrce_input=cy_res.json_to_input(json_data), run_mode=['residual', 'residual']).reprJSON()
 
-   # with open('../sp80053.json') as file:
-    #    json_data = json.load(file)
-    #attack_coverage_metric = run_ttp_coverage_metric(scenario=1, ctrls_dict=json_data)
-    #print(round(attack_coverage_metric, 1))
+    # mimic api
+    with open(os.path.join(os.path.dirname(__file__), 'request_' + scenario.attackAction + '.json')) as file:
+        json_data = json.load(file)
+
+    ttp_res = TtpCoverageResource()
+    ttp_output = run_ttp_coverage_metric(ttpInput=ttp_res.jsonToInput(json_data))
+    print(ttp_output)

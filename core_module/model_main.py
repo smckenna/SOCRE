@@ -20,36 +20,32 @@ from scenario_module import ScenarioModel
 from threat_module.ThreatActor import ThreatActor
 
 
-def compute_tac_v_control_prob(vuln, tac, coeffs):
-    p00 = coeffs[0]
-    p10 = coeffs[1]
-    p01 = coeffs[2]
-    p20 = coeffs[3]
-    p11 = coeffs[4]
-    p02 = coeffs[5]
-    p30 = coeffs[6]
-    p21 = coeffs[7]
-    p12 = coeffs[8]
-    p03 = coeffs[9]
+def compute_tac_v_control_prob(vuln, tac):
+    """
+    The TAC v control model, i.e., a polynomial of two independent variables to compute the resulting probability
+    :param vuln: entity vulnerability metric
+    :param tac: threat actor capability
+    :return: probability that tac beats control
+    """
+    p00, p10, p01, p20, p11, p02, p30, p21, p12, p03 = INPUTS['tac_v_ctrl_coeffs']
     x = 1 - vuln
     y = tac
     return p00 + p10 * x + p01 * y + p20 * x ** 2 + p11 * x * y + p02 * y ** 2 + p30 * x ** 3 + p21 * x ** 2 * y + \
            p12 * x * y ** 2 + p03 * y ** 3
 
 
-def determine_initial_access(tac, ia_control, vuln, ia_RV, coeffs):
-    # TODO these could be done "once" outside loop
+def determine_initial_access(tac, ia_control, vuln, ia_RV):
+    # TODO could these could be done "once" outside loop
     """
     Determine "initial access" (ATT&CK Recon, Resource Dev, Initial Access) success or failure
     :param tac: threat actor capability
     :param ia_control: control against Initial Access TTPs
-    :param vuln: vulnerability metric
+    :param vuln: entity vulnerability metric
     :param ia_RV: Initial Access random variable
-    :param coeffs: threat actor capability versus Control Effectiveness fit coefficients
     :return: A pair of booleans (inherent, residual), with True for success, False for fail
     """
     vuln = vuln * (1 - ia_control)
-    prob = compute_tac_v_control_prob(vuln, tac, coeffs)
+    prob = compute_tac_v_control_prob(vuln, tac)
     if prob < 0:
         prob = 0.
     elif prob > 1:
@@ -62,7 +58,7 @@ def determine_initial_access(tac, ia_control, vuln, ia_RV, coeffs):
     return result
 
 
-def determine_execution(tac, exec_control, exploitability, execution_RV, coeffs):
+def determine_execution(tac, exec_control, exploitability, execution_RV):
     """
     Determine "execution" (ATT&CK Execution, Persistence, Priv Escalation, Defensive Evasion, Cred Access, Discovery,
         Collection) success or failure
@@ -70,11 +66,10 @@ def determine_execution(tac, exec_control, exploitability, execution_RV, coeffs)
     :param exec_control: control against "execution" TTPs
     :param exploitability: exploitability metric
     :param execution_RV: Execution random variable
-    :param coeffs: threat actor capability versus Control Effectiveness fit coefficients
     :return: A pair of booleans (inherent, residual), with True for success, False for fail
     """
     expl = exploitability * (1 - exec_control)
-    prob = compute_tac_v_control_prob(expl, tac, coeffs)
+    prob = compute_tac_v_control_prob(expl, tac)
     if prob < 0:
         prob = 0.
     elif prob > 1:
@@ -87,18 +82,17 @@ def determine_execution(tac, exec_control, exploitability, execution_RV, coeffs)
     return result
 
 
-def determine_movement(tac, movement_control, exploitability, movement_RV, coeffs):
+def determine_movement(tac, movement_control, exploitability, movement_RV):
     """
     Determine "movement" (ATT&CK Lateral Movement) success or failure
     :param tac: threat actor capability
     :param movement_control: control against "movement" TTPs
     :param exploitability: exploitability metric
     :param movement_RV: Movement random variable
-    :param coeffs: threat actor capability versus Control Effectiveness fit coefficients
     :return: A pair of booleans (inherent, residual), with True for success, False for fail
     """
     expl = exploitability * (1 - movement_control)
-    prob = compute_tac_v_control_prob(expl, tac, coeffs)
+    prob = compute_tac_v_control_prob(expl, tac)
     if prob < 0:
         prob = 0.
     elif prob > 1:
@@ -119,8 +113,8 @@ def determine_impact(impact_control, entity):
     :param entity: entity object
     :return: impact value
     """
-    impact = entity.assets[0].value * (1 - impact_control)  # TODO this [0] is temporary
-
+    for a in [_ for _ in entity.assets if _.type == 'server' and _.critical]:
+        impact = a.value * (1 - impact_control)
     return impact
 
 
@@ -216,12 +210,13 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
     :param control_mode: controls mode, 'csf' or 'sp80053'
     :param run_mode: list of ways to run, 'inherent' or 'residual' or ...
     :param cyrce_input: input object
+    :param sweep: flag to indicate if we're doing a parameter sweep
     :return: outputs
     """
 
     # TODO NETWORK ATTACK!
     # used for testing, etc.
-    if platform.uname()[1] == 'BAHG3479J3':
+    if platform.uname()[1] == 'BAHG3479J3' and not sweep:
         random_seed = INPUTS['random_seed']
         logger = logging.getLogger('Main')
         logger.setLevel(level=logging.DEBUG)
@@ -230,8 +225,6 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
         logger.setLevel(level=logging.INFO)
         rng = np.random.default_rng()
         random_seed = int(rng.random() * 100000)
-    if sweep:
-        logger.setLevel(level=logging.INFO)
 
     np.random.seed(random_seed)
 
@@ -239,7 +232,6 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
 
     numberOfMonteCarloRuns = INPUTS['numberOfMonteCarloRuns']
     impactCalcMode = INPUTS['impactCalcMode']
-    coeffs = INPUTS['tac_v_ctrl_coeffs']
 
     # Compute total impact from direct and indirect
     impactValue, directImpactValue, indirectImpactValue = compute_impact_values(cyrce_input, impactCalcMode)
@@ -495,12 +487,12 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
                             access = determine_initial_access(threat_actor.properties['capability'],
                                                               protectDetectRV[iteration],
                                                               vulnerabilityRV[iteration],
-                                                              initial_access_RV[iteration], coeffs)
+                                                              initial_access_RV[iteration])
                     else:  # Determine if threat actor moves to next node
                         access = determine_movement(threat_actor.properties['capability'],
                                                     protectDetectRV[iteration],
                                                     exploitabilityRV[iteration],
-                                                    movement_RV[iteration], coeffs)
+                                                    movement_RV[iteration])
 
                     if nextNode is not None:
                         if access is False:
@@ -530,7 +522,7 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
                     execution = determine_execution(threat_actor.properties['capability'],
                                                     protectDetectRV[iteration],
                                                     exploitabilityRV[iteration],
-                                                    execution_RV[iteration], coeffs)
+                                                    execution_RV[iteration])
 
                     logger.debug('          Execution success?: ' + str(execution))
                     impact = 0.
@@ -586,12 +578,12 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
             # SPM diagnostics
             if not sweep:
                 print("--------------------------------")
-                print("lh = " + str(np.round(a.lh, 4)))
-                print("imp = " + str(np.round(a.imp, 4)))
-                print("risk = " + str(np.round(a.risk, 4)))
-                print("risk_CI = " + str(np.round(a.risk_confInt, 4)))
-                print("riskLevel = " + str(np.round(a.riskLevel, 2)))
-                print("riskLevel_CI = " + str(np.round(a.riskLevel_confInt, 2)))
+                print(f"lh = {np.round(a.lh, 4)}")
+                print(f"imp = {np.round(a.imp, 4)}")
+                print(f"risk = {np.round(a.risk, 4)}")
+                print(f"risk_CI = {np.round(a.risk_confInt, 4)}")
+                print(f"riskLevel = {np.round(a.riskLevel, 4)}")
+                print(f"riskLevel_CI = {np.round(a.riskLevel_confInt, 4)}")
                 print("--------------------------------")
 
                 logger.debug('output: ' + str(CyrceOutput(

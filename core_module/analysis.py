@@ -2,19 +2,17 @@
 Routines that supports CyRCE and does other analysis
 """
 
-import logging
-from copy import deepcopy
 import json
+import os
+from copy import deepcopy
 
-import pandas as pd
-
-from helpers.helper_functions import fetch_excel_data
 import mitreattack.attackToExcel.attackToExcel as attackToExcel
 import mitreattack.attackToExcel.stixToDf as stixToDf
 import numpy as np
-import requests
-import urllib3
-import json
+import pandas as pd
+
+from config import INPUTS
+from helpers.helper_functions import flatten_list, get_confidence_interval
 
 
 def update_nist_json(ctrls_dict):
@@ -83,31 +81,92 @@ def fetch_mitre_nist(version=10, local=True):
     return ttp_to_controls
 
 
-def run_ttp_coverage_metric(scenario, ctrls_dict):
-    ttp_to_controls = fetch_mitre_nist(version=10, local=True)
+"""
+Threat Coverage Code
+"""
+
+
+def run_ttp_coverage_metric(ttpInput):
+    controls = ttpInput.controls
+    action = ttpInput.action
     fam_scores = {}
-    for fam in ctrls_dict:
-        fam_scores[fam] = 0.
-        for ctrl in ctrls_dict[fam].keys():
-            fam_scores[fam] = fam_scores[fam] + ctrls_dict[fam][ctrl]
-        fam_scores[fam] = fam_scores[fam] / len(ctrls_dict[fam].keys())
+    for ctrl in controls:
+        fam = ctrl.label.split("-")[0]
+        if fam in fam_scores.keys():
+            fam_scores[fam].append([ctrl.score] * len(ctrl.ttps))
+        else:
+            fam_scores[fam] = [[ctrl.score] * len(ctrl.ttps)]
 
-    in_scope_controls = []
-    ttps = ['T1111', 'T1137', 'T1185', 'T1528', 'T1021', 'T1563']
+    for fam in fam_scores:
+        fam_scores[fam] = np.mean(flatten_list(fam_scores[fam]))
 
-    for ttp in ttps:
-        ctrl = ttp_to_controls[ttp]
-        in_scope_controls.append(ctrl)
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), '../model_resources/control_action_ttp_mapping.csv'), dtype='string')
+    ttps = []
+    for r in df.iterrows():
+        if not pd.isna(r[1]['MITRE ATTACK Technique']):
+            ttps.append(r[1]['MITRE ATTACK Technique'].split('.')[0])
+        else:
+            ttps.append("")
+    df['TTP'] = ttps
 
-    m = 0
-    n = 0
-    for in_ctrl in in_scope_controls:
-        fam = in_ctrl[0:2]
-        for ctrl in ctrls_dict[fam].keys():
-            if in_ctrl == ctrl:
-                m = m + ctrls_dict[fam][ctrl]
-                n += 1
-    return m / n * 100.
+    action_dict = {}
+    action_list = ['error', 'misuse', 'hacking', 'malware', 'social']
+    for act in action_list:
+        act_df = df[df['VERIS Threat Action'].str.contains(act + '.variety')]
+        action_dict[act] = list(zip(act_df['NIST 800-53 Control'].tolist(), act_df['TTP'].tolist()))
+
+    sum1 = []
+    in_scope_ttps = [x[1] for x in action_dict[action]]
+    in_scope_actions_ = df[df['VERIS Threat Action'].str.contains(action + '.variety')]
+    in_scope_actions = np.unique(in_scope_actions_['VERIS Threat Action'].tolist())
+
+    mitigated_ttps = []
+    mitigated_actions = []
+    for ctrl_ttp in action_dict[action]:  # the in-scope controls|ttps
+        if ctrl_ttp[0] not in [x.label for x in controls]:  # control not assessed
+            score = 0
+            count1 = 1
+        else:
+            if action in ['hacking', 'malware', 'social']:
+                score = [x.score for x in controls if x.label == ctrl_ttp[0]][0]  # control score
+                mitigated_ttps.append(ctrl_ttp[1])  # ttp mitigated by this control
+                count1 = 1
+            else:
+                score = [x.score for x in controls if x.label == ctrl_ttp[0]][0]
+                if action == 'error':
+                    error = df[df['VERIS Threat Action'].str.contains('error.variety')]
+                    mitigated_actions_ = error[error['NIST 800-53 Control'].str.contains(ctrl_ttp[0])][
+                        'VERIS Threat Action'].tolist()  # actions mitigated by this control
+                else:
+                    misuse = df[df['VERIS Threat Action'].str.contains('misuse.variety')]
+                    mitigated_actions_ = misuse[misuse['NIST 800-53 Control'].str.contains(ctrl_ttp[0])][
+                        'VERIS Threat Action'].tolist()  # action(s) mitigated by this control
+                count1 = len(mitigated_actions_)  # number of actions mitigated by this control
+                mitigated_actions.append(mitigated_actions_)
+        sum1.append([score] * count1)
+
+    effectiveness = np.mean(flatten_list(sum1))
+    if action in ['hacking', 'malware', 'social']:
+        n = len(np.unique(mitigated_ttps))
+        d = len(np.unique(in_scope_ttps))
+    else:
+        n = len(np.unique(flatten_list(mitigated_actions)))
+        d = len(in_scope_actions)
+
+    coverage = n / d
+    threat_coverage = effectiveness * coverage
+    ci = get_confidence_interval(flatten_list(sum1), alpha=INPUTS['confidenceAlpha'])  # no need to factor in the
+                                                                                       # coverage since that is just a
+                                                                                       # constant and does not affect
+                                                                                       # the CI math
+    return {'effectiveness': effectiveness,
+            'coverage': coverage,
+            'n': n,
+            'd': d,
+            'threat_coverage': threat_coverage,
+            'confidence_interval': ci,
+            'var': np.var(flatten_list(sum1))}
+
 
 
 def mit():
