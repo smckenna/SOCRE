@@ -17,15 +17,15 @@ from config import INPUTS
 
 # np.seterr(all='raise')
 
-def compute_metric(exploitability, attack_surface, method='multiply'):
+def compute_metric(a, b, method='multiply'):
     if method == 'multiply':
-        v = exploitability * attack_surface
+        v = a * b
     elif method == 'geometric':
-        v = np.sqrt(exploitability * attack_surface)
+        v = np.sqrt(a * b)
     elif method == 'harmonic':
-        v = 2. * exploitability * attack_surface / (exploitability + attack_surface)
+        v = 2. * a * b / (a + b)
     else:
-        v = exploitability * attack_surface
+        v = a * b
     return v
 
 
