@@ -6,19 +6,15 @@ INPUTS = {
     'impactCalcMode': 'mean',  # mean or max
     'random_seed': 101798,
     'confidenceAlpha': 0.05,
-    'scoring_lambda': 0.2,
-    'scoring_fit': [7.841, -0.264],
-    'tac_v_ctrl_coeffs': [0.174147,
-                          -0.931719,
-                          2.339254,
-                          1.097710,
-                          -1.370110,
-                          -2.272632,
-                          -0.315703,
-                          -0.931118,
-                          1.924220,
-                          0.836075]
-
+    'scoring_lambda': 0.245,
+    'scoring_fit': [8.4, -0.03],
+    'tac_v_ctrl_coeffs': [0.056030,
+                          -0.095449,
+                          2.448443,
+                          -2.320180,
+                          -2.114923,
+                          1.934016,
+                          0.699526]
 }
 THREAT_ACTOR_CAPACITY_VALUES = {
     'determination': {

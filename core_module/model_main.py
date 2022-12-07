@@ -27,11 +27,10 @@ def compute_tac_v_control_prob(vuln, tac):
     :param tac: threat actor capability
     :return: probability that tac beats control
     """
-    p00, p10, p01, p20, p11, p02, p30, p21, p12, p03 = INPUTS['tac_v_ctrl_coeffs']
+    p00, p10, p01, p11, p02, p12, p03 = INPUTS['tac_v_ctrl_coeffs']
     x = 1 - vuln
     y = tac
-    return p00 + p10 * x + p01 * y + p20 * x ** 2 + p11 * x * y + p02 * y ** 2 + p30 * x ** 3 + p21 * x ** 2 * y + \
-           p12 * x * y ** 2 + p03 * y ** 3
+    return p00 + p10 * x + p01 * y + p11 * x * y + p02 * y ** 2 + p12 * x * y ** 2 + p03 * y ** 3
 
 
 def determine_initial_access(tac, ia_control, vuln, ia_RV):
