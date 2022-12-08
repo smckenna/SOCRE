@@ -13,8 +13,8 @@ class MachineGroup(object):
         self.network_group = network_group
         self.exploitability = 0.5
         self.attack_surface = 0.5
-        self.vulnerability = compute_metric(exploitability=self.exploitability,
-                                            attack_surface=self.attack_surface, method='geometric')
+        self.vulnerability = compute_metric(a=self.exploitability,
+                                            b=self.attack_surface, method='geometric')
 
 
 class NetworkGroup(object):
@@ -30,5 +30,5 @@ class NetworkGroup(object):
         self.machine_groups = []
         self.exploitability = 0.5
         self.attack_surface = 0.5
-        self.vulnerability = compute_metric(exploitability=self.exploitability,
-                                            attack_surface=self.attack_surface, method='geometric')
+        self.vulnerability = compute_metric(a=self.exploitability,
+                                            b=self.attack_surface, method='geometric')

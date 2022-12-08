@@ -571,7 +571,10 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
 
             # Computing means
             a.lh = np.mean(a.lh_vec)
-            a.imp = np.mean(a.imp_vec[a.manifest['access'] > 0])
+            if np.sum(a.manifest['access']) == 0:
+                a.impI = 0.
+            else:
+                a.imp = np.mean(a.imp_vec[a.manifest['access'] > 0])
             a.risk = np.mean(a.risk_vec)
 
             # SPM diagnostics
