@@ -628,8 +628,8 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
                                                                        alpha=INPUTS['confidenceAlpha'])), 0)
             #   Likelihood
             LHLevel_vec = compute_levels(tmpLHTransformed_vec, INPUTS['scoring_fits']['likelihood'])
-            a.LHLevel_confIntI = max(min(2.5, get_confidence_interval(LHLevel_vec[LHLevel_vec > 0],
-                                                                      alpha=INPUTS['confidenceAlpha'])), 0)
+            a.LHLevel_confInt = max(min(2.5, get_confidence_interval(LHLevel_vec[LHLevel_vec > 0],
+                                                                     alpha=INPUTS['confidenceAlpha'])), 0)
             #   Impact
             impactLevel_vec = compute_levels(tmpImpactTransformed_vec, INPUTS['scoring_fits']['impact'])
             a.impactLevel_confInt = max(min(2.5, get_confidence_interval(impactLevel_vec[impactLevel_vec > 0],
@@ -639,12 +639,12 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
             #   Raw
             a.LH_var = float(np.var(a.lh_vec))
             a.imp_var = float(np.var(a.imp_vec))
-            a.risk_varI = np.var(a.risk_vec)
+            a.risk_var = np.var(a.risk_vec)
 
             #   Levels
-            a.riskLevel_varI = np.var(riskLevel_vec)
-            a.LHLevel_varI = np.var(LHLevel_vec)
-            a.impactLevel_varI = np.var(impactLevel_vec)
+            a.riskLevel_var = np.var(riskLevel_vec)
+            a.LHLevel_var = np.var(LHLevel_vec)
+            a.impactLevel_var = np.var(impactLevel_vec)
 
             # Compute mean Levels (the results we return)
             #   Risk
@@ -661,28 +661,24 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
 
             # Compute mean raw values
             a.lh = np.mean(a.lh_vec)
-            if np.sum(a.access) == 0:
+            if np.sum(a.manifest['access']) == 0:
                 a.imp = 0.
             else:
-                a.imp = np.mean(a.imp_vec[a.access > 0])
+                a.imp = np.mean(a.imp_vec[a.manifest['access'] > 0])
             a.risk = np.mean(a.risk_vec)
 
             # SPM diagnostics
             if not deployed:
-                print("lh: (I) " + str(np.round(a.lhI, 4)) + ", (R) " + str(np.round(a.lhR, 4)))
-                print("imp: (I) " + str(np.round(a.impI, 4)) + ", (R) " + str(np.round(a.impR, 4)))
-                print("lhLevel: (I) " + str(np.round(a.LHLevelI, 2)) + ", (R) " + str(np.round(a.LHLevelR, 2)))
-                print("lhLevel_CI: (I) " + str(np.round(a.LHLevel_confIntI, 3)) + ", (R) " + str(
-                    np.round(a.LHLevel_confIntR, 3)))
-                print("impLevel: (I) " + str(np.round(a.impactLevelI, 2)) + ", (R) " + str(np.round(a.impactLevelR, 2)))
-                print("impLevel_CI: (I) " + str(np.round(a.impactLevel_confIntI, 3)) + ", (R) " + str(
-                    np.round(a.impactLevel_confIntR, 3)))
-                print("risk: (I) " + str(np.round(a.riskI, 4)) + ", (R) " + str(np.round(a.riskR, 4)))
-                print(
-                    "risk_CI: (I) " + str(np.round(a.risk_confIntI, 4)) + ", (R) " + str(np.round(a.risk_confIntR, 4)))
-                print("riskLevel: (I) " + str(np.round(a.riskLevelI, 2)) + ", (R) " + str(np.round(a.riskLevelR, 2)))
-                print("riskLevel_CI: (I) " + str(np.round(a.riskLevel_confIntI, 3)) + ", (R) " + str(
-                    np.round(a.riskLevel_confIntR, 3)))
+                print("lh: " + str(np.round(a.lh, 4)))
+                print("imp: " + str(np.round(a.imp, 4)))
+                print("lhLevel: " + str(np.round(a.LHLevel, 2)))
+                print("lhLevel_CI: " + str(np.round(a.LHLevel_confInt, 3)))
+                print("impLevel: " + str(np.round(a.impactLevel, 2)))
+                print("impLevel_CI: " + str(np.round(a.impactLevel_confInt, 3)))
+                print("risk: " + str(np.round(a.risk, 4)))
+                print("risk_CI: " + str(np.round(a.risk_confInt, 4)))
+                print("riskLevel: " + str(np.round(a.riskLevel, 2)))
+                print("riskLevel_CI: " + str(np.round(a.riskLevel_confInt, 3)))
                 print("--------------------------------")
 
                 logger.debug('output: ' + str(CyrceOutput(
