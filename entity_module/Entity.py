@@ -40,6 +40,7 @@ class Entity(object):
     def __init__(self, label="default", type="asset", critical=False):
         self.uuid = uuid4()
         self.value = 0
+        self.perceived_value = 0
         self.type = type
         self.label = label
         self.owner = None
