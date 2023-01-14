@@ -17,6 +17,12 @@ from config import INPUTS
 
 # np.seterr(all='raise')
 
+def scale_transform(x, factor, percentile=0.001):
+    a = np.quantile(x, percentile)
+    b = np.quantile(x, 1 - percentile)
+    return factor / (b - a), factor*a / (b - a)
+
+
 def compute_metric(a, b, method='multiply'):
     if method == 'multiply':
         v = a * b
