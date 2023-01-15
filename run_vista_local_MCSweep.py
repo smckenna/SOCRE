@@ -183,11 +183,9 @@ if __name__ == '__main__':
         Imx = np.power(im, best_lambda)
 
         pRisk = scale_transform(Rx, 5, 0.001)
-        print("pRisk = " + str(pRisk))
         print(f"pRisk = {pRisk}")
 
         pLH = scale_transform(LHx, 5, 0.001)
-        print("pLH = " + str(pLH))
         print(f"pLH = {pLH}")
 
         pIm = scale_transform(Imx, 5, 0.001)
