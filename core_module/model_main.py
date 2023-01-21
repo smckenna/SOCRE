@@ -1,5 +1,5 @@
 """
-Cyber Risk Computational Engine - CyCRE or SOCR
+Simulation of Cyber Risk Engine -  SOCRE
 """
 import os
 import platform

@@ -8,12 +8,14 @@ class ThreatActor:
     def __init__(self, type="threatactor", label="Threat Actor"):
         self.uuid = uuid4()
         self.label = label
+        self.type = "APT"
         self.properties = {'determination': 0,
                            "sophistication": 0,
                            "type": "",
                            "resources": 0,
                            "capability": 0,
                            "origin": "",
+                           "motivated_by": "",
                            "targets": []}
         # below is the idea; should come from DB
         self.attempt_limit = 1
@@ -64,11 +66,6 @@ class ThreatActor:
                                          "resources": 0,
                                          "capability": 0}
                                }
-        self.threat_action_properties = {"action": {'determination': 0,
-                                                    "sophistication": 0,
-                                                    "resources": 0,
-                                                    "capability": 0}
-                                         }
 
     def assign_property(self, prop, val):
         self.properties[prop.lower()] = val
