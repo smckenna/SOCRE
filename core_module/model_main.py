@@ -1,6 +1,7 @@
 """
-Simulation of Cyber Risk Engine -  SOCRE
+Simulation of Cyber Risk-  SOCR
 """
+import datetime
 import os
 import platform
 from collections import OrderedDict
@@ -228,9 +229,9 @@ def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
     return x11, p11
 
 
-def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=False):
+def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=False):
     """
-    Main routine to run CyRCE
+    Main routine to run SOCR
     :param control_mode: controls mode, 'csf' or 'sp80053'
     :param run_mode: list of ways to run, 'inherent' or 'residual' or ...
     :param cyrce_input: input object
@@ -243,16 +244,29 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
     # used for testing, etc.
     if platform.uname()[1] == 'BAHG3479J3' and not sweep:  # local, not doing sweep
         random_seed = 101798
-        logger = logging.getLogger('Main')
-        logger.setLevel(level=logging.NOTSET)
+        logging.basicConfig(level=logging.INFO,
+                            filename='sim_' + str(datetime.datetime.now()).replace(' ', '_').replace(':', '_') + '.log',
+                            filemode='w',
+                            format='%(name)s - %(levelname)s - %(message)s')
+    #        logger = logging.getLogger('Main')
+    #        logger.setLevel(level=logging.DEBUG)
     elif not sweep:  # deployed
-        deployed = True
         random_seed = 101798
-        logger = logging.getLogger('Main')
-        logger.setLevel(level=logging.CRITICAL)
+        #        logger = logging.getLogger('Main')
+        #        logger.setLevel(level=logging.INFO)
+        logging.basicConfig(level=logging.CRITICAL,
+                            filename='warnings_' + str(datetime.datetime.now()).replace(' ', '_').replace(':',
+                                                                                                          '_') + '.log',
+                            filemode='w',
+                            format='%(name)s - %(levelname)s - %(message)s')
     elif platform.uname()[1] == 'BAHG3479J3' and sweep:  # local, sweep
-        logger = logging.getLogger('Main')
-        logger.setLevel(level=logging.CRITICAL)
+        #        logger = logging.getLogger('Main')
+        #        logger.setLevel(level=logging.INFO)
+        logging.basicConfig(level=logging.WARNING,
+                            filename='warnings_' + str(datetime.datetime.now()).replace(' ', '_').replace(':',
+                                                                                                          '_') + '.log',
+                            filemode='w',
+                            format='%(name)s - %(levelname)s - %(message)s')
         rng = np.random.default_rng()
         random_seed = int(rng.random() * 100000)
 
@@ -265,7 +279,9 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
 
     # Compute total impact from direct and indirect
     impactValue, directImpactValue, indirectImpactValue = compute_impact_values(cyrce_input, impactCalcMode)
-
+    impactValue = 1
+    directImpactValue = 1
+    indirectImpactValue = 1
     # Set up entities; at this stage, just assets
     all_entities = AllEntities()
     asset_group = EntityGroup("assets")
@@ -329,9 +345,9 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
     # Abstraction groups
     # Will use asset management data, network model, etc.
     network_model = Network(graph=graph)
-    logger.info("      Assigning assets to network groups")
+    #logger.info("      Assigning assets to network groups")
     network_model.assign_assets_to_network_groups(all_entities.list)
-    logger.info("      Assigning assets to machine groups")
+    #logger.info("      Assigning assets to machine groups")
     network_model.assign_assets_to_machine_groups()
 
     # Handle and set up attack target(s)
@@ -467,18 +483,18 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
             for iteration in range(0, numberOfMonteCarloRuns):
                 a = rng.choice(all_entities.list, size=1)[0]
                 makeError = (1 - diligenceRV[iteration]) > protectDetectRV[iteration]
-                logger.info(' Error committed? : ' + str(makeError))
+                #logger.info(' Error committed? : ' + str(makeError))
                 makeErrorRVec.append(int(makeError))
                 execution = False
                 if makeError:
                     execution = errorRV[iteration] > protectDetectRV[iteration]
-                    logger.info(' Error mitigated?: ' + str(not execution))
+                    #logger.info(' Error mitigated?: ' + str(not execution))
                 impact = 0.
                 access = 0.
                 if execution:
                     access = 1.
                     impact = a.value * (1 - respondRecoverRV[iteration])
-                    logger.info(' Impact: ' + str(round(impact, 2)))
+                    #logger.info(' Impact: ' + str(round(impact, 2)))
                 a.manifest['risk'][iteration] = probability_scale_factor * impact
                 a.manifest['impact'][iteration] = impact
                 a.manifest['access'][iteration] = access
@@ -501,8 +517,8 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
                 currentNode = None
                 failedNodeList = []
 
-                logger.info(' -----------------')
-                logger.info(' Iteration: ' + str(iteration))
+                #logger.info(' -----------------')
+                #logger.info(' Iteration: ' + str(iteration))
 
                 attackDict[iteration]['iteration'] = iteration
                 attackDict[iteration]['attack_type'] = 'nominal'
@@ -532,18 +548,18 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
                                                                    objective_list=objective_node,
                                                                    network_model=network_model,
                                                                    failed_node_list=failedNodeList)
-                        if nextNode is not None:
-                            logger.info(' ' + logger_from_string + ' ----> ' + nextNode.label)
+                        #if nextNode is not None:
+                        #    logger.info(' ' + logger_from_string + ' ----> ' + nextNode.label)
 
                         if nextNode is None:
                             tryCount += 1
                             failedNodeList.append(nextNode)
                             if tryCount > threat_actor.attempt_limit:
-                                logger.info('   End of path reached, attacker giving up')
+                                #logger.info('   End of path reached, attacker giving up')
                                 done = True
                                 break
-                            else:
-                                logger.info('   End of path reached, attacker trying again')
+                            #else:
+                            #    logger.info('   End of path reached, attacker trying again')
 
                         # Determine if threat actor gains INITIAL ACCESS
                         if initial_access:
@@ -565,20 +581,20 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
                                 tryCount += 1
                                 failedNodeList.append(nextNode)
                                 if tryCount > threat_actor.attempt_limit:
-                                    logger.info('   Failed, attacker giving up - too many tries')
+                                    #logger.info('   Failed, attacker giving up - too many tries')
                                     done = True
                                     break
-                                else:
-                                    logger.info('   Failed, trying again')
+                                #else:
+                                #    logger.info('   Failed, trying again')
                             else:
-                                logger.info('    Next hop enabled ...')
+                                #logger.info('    Next hop enabled ...')
                                 initial_access = False
                                 currentNode = nextNode
 
                             if currentNode in attackDictElement['destination']:
                                 done = True
                                 initial_access = False
-                                logger.info('       Reached target                                             XXX')
+                                #logger.info('       Reached target                                             XXX')
                                 break
 
                     if tryCount > threat_actor.attempt_limit:
@@ -590,13 +606,13 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
                                                         exploitabilityRV[iteration],
                                                         execution_RV[iteration])
 
-                        logger.info('          Execution success?: ' + str(execution))
+                        #logger.info('          Execution success?: ' + str(execution))
                         impact = 0.
                         access = 0.
                         if execution:
                             access = 1.
                             impact = determine_impact(respondRecoverRV[iteration], nextNode)
-                            logger.info('             Impact: ' + str(round(impact, 2)))
+                            #logger.info('             Impact: ' + str(round(impact, 2)))
                         nextNode.assets[0].manifest['risk'][iteration] = probability_scale_factor * impact
                         nextNode.assets[0].manifest['impact'][iteration] = impact
                         nextNode.assets[0].manifest['access'][iteration] = access
@@ -682,23 +698,23 @@ def run_cyrce(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=Fals
                 print("riskLevel_CI: " + str(np.round(a.riskLevel_confInt, 3)))
                 print("--------------------------------")
 
-                logger.info('output: ' + str(CyrceOutput(
-                    overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
-                    overallResidualLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
-                    overallInherentImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
-                    overallResidualImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
-                    overallInherentRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
-                    overallResidualRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
-                    attackSurface=float(attackSurface),
-                    exploitability=exploitability,
-                    vulnerability=vulnerability,
-                    threatActorCapacity=threat_actor.properties['capability'],
-                    threatLevel=float(np.mean(threatLevel)),
-                    probability_scale_factor0=float(probability_scale_factor0),
-                    probability_scale_factor=float(probability_scale_factor),
-                    attackMotivators=float(attackMotivator),
-                    directImpact=float(directImpactValue),
-                    indirectImpact=float(indirectImpactValue))))
+                # logger.info('output: ' + str(CyrceOutput(
+                #     overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+                #     overallResidualLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+                #     overallInherentImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+                #     overallResidualImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+                #     overallInherentRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
+                #     overallResidualRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
+                #     attackSurface=float(attackSurface),
+                #     exploitability=exploitability,
+                #     vulnerability=vulnerability,
+                #     threatActorCapacity=threat_actor.properties['capability'],
+                #     threatLevel=float(np.mean(threatLevel)),
+                #     probability_scale_factor0=float(probability_scale_factor0),
+                #     probability_scale_factor=float(probability_scale_factor),
+                #     attackMotivators=float(attackMotivator),
+                #     directImpact=float(directImpactValue),
+                #     indirectImpact=float(indirectImpactValue))))
 
     return CyrceOutput(
         overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),

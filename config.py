@@ -1,8 +1,8 @@
 INPUTS = {
-    'numberOfMonteCarloRuns': 1000,
-    'graph_model_file': '../model_resources/atomic_network_model.graphml',
+    'numberOfMonteCarloRuns': 2000,
+    'graph_model_file': '../model_resources/demo_network_model.graphml',
     'bbn_file': '../scenario_module/scenario_bbn_dbir.json',
-    'assets_file': './model_resources/atomic_assets.csv',
+    'assets_file': './model_resources/demo_assets.csv',
     'impactCalcMode': 'mean',  # mean or max
     'random_seed': 101798,
     'confidenceAlpha': 0.05,
@@ -20,7 +20,7 @@ THREAT_ACTOR_CAPACITY_VALUES = {
     'determination': {
         'low': 0.1,
         'medium': 0.5,
-        'high': 0.9
+        'high': 1.0
     },
     'resources': {
         'individual': 0.2,

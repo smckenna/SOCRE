@@ -2,7 +2,6 @@ from flask import request
 from flask_restful import Resource
 
 from core_module.analysis import run_ttp_coverage_metric
-from core_module.model_main import run_cyrce
 from input_module.cyrce_input import CyrceInput, CyrceTtpCoverageInput, \
     AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, Scenario, DirectImpact, Impact, IndirectImpact, \
     CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, \
