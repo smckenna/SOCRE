@@ -19,8 +19,10 @@ self.type = 'laptop'
 self.type = 'desktop'
 self.type = 'mobile_device'
 self.type = 'virtual_machine'
-self.type = 'cloud_object'
+self.type = 'cloud_vm'
 self.type = 'cloud_database'
+self.type = 'cloud_service'
+self.type = 'cloud_storage'
 """
 
 

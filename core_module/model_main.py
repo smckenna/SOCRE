@@ -271,6 +271,7 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
         random_seed = int(rng.random() * 100000)
 
     np.random.seed(random_seed)
+    logging.info(str(random_seed))
 
     graph = nx.read_graphml(os.path.join(os.path.dirname(__file__), INPUTS['graph_model_file']))
 
@@ -345,9 +346,9 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
     # Abstraction groups
     # Will use asset management data, network model, etc.
     network_model = Network(graph=graph)
-    #logger.info("      Assigning assets to network groups")
+    logging.info("      Assigning assets to network groups")
     network_model.assign_assets_to_network_groups(all_entities.list)
-    #logger.info("      Assigning assets to machine groups")
+    logging.info("      Assigning assets to machine groups")
     network_model.assign_assets_to_machine_groups()
 
     # Handle and set up attack target(s)
@@ -389,7 +390,7 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
 
     probability_scale_factor0 = scenario.probability_scale_factor
 
-    probability_scale_factor = scenario.probability_scale_factor * attackMotivator
+    probability_scale_factor = compute_metric(scenario.probability_scale_factor, attackMotivator, 'geometric')
 
     if scenario.attackLossType is None:
         scenario.attackLossType = np.random.choice(['c', 'i', 'a'])  # pick a loss type randomly
@@ -483,18 +484,18 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
             for iteration in range(0, numberOfMonteCarloRuns):
                 a = rng.choice(all_entities.list, size=1)[0]
                 makeError = (1 - diligenceRV[iteration]) > protectDetectRV[iteration]
-                #logger.info(' Error committed? : ' + str(makeError))
+                logging.info(' Error committed? : ' + str(makeError))
                 makeErrorRVec.append(int(makeError))
                 execution = False
                 if makeError:
                     execution = errorRV[iteration] > protectDetectRV[iteration]
-                    #logger.info(' Error mitigated?: ' + str(not execution))
+                    logging.info(' Error mitigated?: ' + str(not execution))
                 impact = 0.
                 access = 0.
                 if execution:
                     access = 1.
                     impact = a.value * (1 - respondRecoverRV[iteration])
-                    #logger.info(' Impact: ' + str(round(impact, 2)))
+                    logging.info(' Impact: ' + str(round(impact, 2)))
                 a.manifest['risk'][iteration] = probability_scale_factor * impact
                 a.manifest['impact'][iteration] = impact
                 a.manifest['access'][iteration] = access
@@ -517,8 +518,8 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
                 currentNode = None
                 failedNodeList = []
 
-                #logger.info(' -----------------')
-                #logger.info(' Iteration: ' + str(iteration))
+                logging.info(' -----------------')
+                logging.info(' Iteration: ' + str(iteration))
 
                 attackDict[iteration]['iteration'] = iteration
                 attackDict[iteration]['attack_type'] = 'nominal'
@@ -548,25 +549,25 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
                                                                    objective_list=objective_node,
                                                                    network_model=network_model,
                                                                    failed_node_list=failedNodeList)
-                        #if nextNode is not None:
-                        #    logger.info(' ' + logger_from_string + ' ----> ' + nextNode.label)
+                        if nextNode is not None:
+                            logging.info(' ' + logger_from_string + ' ----> ' + nextNode.label)
 
                         if nextNode is None:
                             tryCount += 1
                             failedNodeList.append(nextNode)
                             if tryCount > threat_actor.attempt_limit:
-                                #logger.info('   End of path reached, attacker giving up')
+                                logging.info('   End of path reached, attacker giving up')
                                 done = True
                                 break
-                            #else:
-                            #    logger.info('   End of path reached, attacker trying again')
+                            else:
+                                logging.info('   End of path reached, attacker trying again')
 
                         # Determine if threat actor gains INITIAL ACCESS
                         if initial_access:
                             if attackAction == 'misuse':
                                 access = True  # this is for malicious insider, who has initial access
                             else:
-                                access = determine_initial_access(threat_actor.properties['capability'],
+                                access = determine_initial_access(tacRV[iteration],
                                                                   protectDetectRV[iteration],
                                                                   vulnerabilityRV[iteration],
                                                                   initial_access_RV[iteration])
@@ -581,20 +582,20 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
                                 tryCount += 1
                                 failedNodeList.append(nextNode)
                                 if tryCount > threat_actor.attempt_limit:
-                                    #logger.info('   Failed, attacker giving up - too many tries')
+                                    logging.info('   Failed, attacker giving up - too many tries')
                                     done = True
                                     break
-                                #else:
-                                #    logger.info('   Failed, trying again')
+                                else:
+                                    logging.info('   Failed, trying again')
                             else:
-                                #logger.info('    Next hop enabled ...')
+                                logging.info('    Next hop enabled ...')
                                 initial_access = False
                                 currentNode = nextNode
 
                             if currentNode in attackDictElement['destination']:
                                 done = True
                                 initial_access = False
-                                #logger.info('       Reached target                                             XXX')
+                                logging.info('       Reached target                                             XXX')
                                 break
 
                     if tryCount > threat_actor.attempt_limit:
@@ -606,13 +607,13 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
                                                         exploitabilityRV[iteration],
                                                         execution_RV[iteration])
 
-                        #logger.info('          Execution success?: ' + str(execution))
+                        logging.info('          Execution success?: ' + str(execution))
                         impact = 0.
                         access = 0.
                         if execution:
                             access = 1.
                             impact = determine_impact(respondRecoverRV[iteration], nextNode)
-                            #logger.info('             Impact: ' + str(round(impact, 2)))
+                            logging.info('             Impact: ' + str(round(impact, 2)))
                         nextNode.assets[0].manifest['risk'][iteration] = probability_scale_factor * impact
                         nextNode.assets[0].manifest['impact'][iteration] = impact
                         nextNode.assets[0].manifest['access'][iteration] = access
@@ -640,15 +641,15 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
 
             # Compute the "Level" CIs (requires calc of levels for all runs - "vecs")
             #   Risk
-            riskLevel_vec = compute_levels(tmpRiskTransformed_vec, INPUTS['scoring_fits']['risk'])
+            riskLevel_vec = compute_levels(tmpRiskTransformed_vec, INPUTS['scoring_coeffs']['risk'])
             a.riskLevel_confInt = max(min(2.5, get_confidence_interval(riskLevel_vec[riskLevel_vec > 0],
                                                                        alpha=INPUTS['confidenceAlpha'])), 0)
             #   Likelihood
-            LHLevel_vec = compute_levels(tmpLHTransformed_vec, INPUTS['scoring_fits']['likelihood'])
+            LHLevel_vec = compute_levels(tmpLHTransformed_vec, INPUTS['scoring_coeffs']['likelihood'])
             a.LHLevel_confInt = max(min(2.5, get_confidence_interval(LHLevel_vec[LHLevel_vec > 0],
                                                                      alpha=INPUTS['confidenceAlpha'])), 0)
             #   Impact
-            impactLevel_vec = compute_levels(tmpImpactTransformed_vec, INPUTS['scoring_fits']['impact'])
+            impactLevel_vec = compute_levels(tmpImpactTransformed_vec, INPUTS['scoring_coeffs']['impact'])
             a.impactLevel_confInt = max(min(2.5, get_confidence_interval(impactLevel_vec[impactLevel_vec > 0],
                                                                          alpha=INPUTS['confidenceAlpha'])), 0)
 
@@ -666,15 +667,15 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
             # Compute mean Levels (the results we return)
             #   Risk
             riskTransformed = compute_transformed_vec(np.mean(a.risk_vec), INPUTS['scoring_lambdas']['risk'])
-            a.riskLevel = max(min(5, compute_levels(riskTransformed, INPUTS['scoring_fits']['risk'])), 0)
+            a.riskLevel = max(min(5, compute_levels(riskTransformed, INPUTS['scoring_coeffs']['risk'])), 0)
 
             #   Likelihood
             LHTransformed = compute_transformed_vec(np.mean(a.lh_vec), INPUTS['scoring_lambdas']['likelihood'])
-            a.LHLevel = max(min(5, compute_levels(LHTransformed, INPUTS['scoring_fits']['likelihood'])), 0)
+            a.LHLevel = max(min(5, compute_levels(LHTransformed, INPUTS['scoring_coeffs']['likelihood'])), 0)
 
             #   Impact
             impactTransformed = compute_transformed_vec(np.mean(a.imp_vec), INPUTS['scoring_lambdas']['likelihood'])
-            a.impactLevel = max(min(5, compute_levels(impactTransformed, INPUTS['scoring_fits']['impact'])), 0)
+            a.impactLevel = max(min(5, compute_levels(impactTransformed, INPUTS['scoring_coeffs']['impact'])), 0)
 
             # Compute mean raw values
             a.lh = np.mean(a.lh_vec)
@@ -685,18 +686,18 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
             a.risk = np.mean(a.risk_vec)
 
             # SPM diagnostics
-            if not deployed and not sweep:
-                print("lh: " + str(np.round(a.lh, 4)))
-                print("imp: " + str(np.round(a.imp, 4)))
-                print("lhLevel: " + str(np.round(a.LHLevel, 2)))
-                print("lhLevel_CI: " + str(np.round(a.LHLevel_confInt, 3)))
-                print("impLevel: " + str(np.round(a.impactLevel, 2)))
-                print("impLevel_CI: " + str(np.round(a.impactLevel_confInt, 3)))
-                print("risk: " + str(np.round(a.risk, 4)))
-                print("risk_CI: " + str(np.round(a.risk_confInt, 4)))
-                print("riskLevel: " + str(np.round(a.riskLevel, 2)))
-                print("riskLevel_CI: " + str(np.round(a.riskLevel_confInt, 3)))
-                print("--------------------------------")
+            # if not deployed and not sweep:
+            #     print("lh: " + str(np.round(a.lh, 4)))
+            #     print("imp: " + str(np.round(a.imp, 4)))
+            #     print("lhLevel: " + str(np.round(a.LHLevel, 2)))
+            #     print("lhLevel_CI: " + str(np.round(a.LHLevel_confInt, 3)))
+            #     print("impLevel: " + str(np.round(a.impactLevel, 2)))
+            #     print("impLevel_CI: " + str(np.round(a.impactLevel_confInt, 3)))
+            #     print("risk: " + str(np.round(a.risk, 4)))
+            #     print("risk_CI: " + str(np.round(a.risk_confInt, 4)))
+            #     print("riskLevel: " + str(np.round(a.riskLevel, 2)))
+            #     print("riskLevel_CI: " + str(np.round(a.riskLevel_confInt, 3)))
+            #     print("--------------------------------")
 
                 # logger.info('output: ' + str(CyrceOutput(
                 #     overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
