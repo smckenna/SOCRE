@@ -17,6 +17,10 @@ from config import INPUTS
 
 # np.seterr(all='raise')
 
+def perform_scoring(x, a, b, factor=1):
+    return (x * a + b) * factor
+
+
 def scale_transform(x, factor, percentile=0.001):
     a = np.quantile(x, percentile)
     b = np.quantile(x, 1 - percentile)

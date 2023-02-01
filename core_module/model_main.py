@@ -26,7 +26,7 @@ def compute_transformed_vec(v, lmbda):
         vec = np.log(v + 1e-10)
     else:
         if isinstance(v, float):
-            vec = v**lmbda
+            vec = v ** lmbda
         else:
             vec = np.power(v, lmbda)
     return vec
@@ -219,7 +219,7 @@ def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
     :param z: measurement of the metric
     :param baselineStdDev: std dev of the initial estimate of the metric
     :param measStdDev: std dev of the measurement of the metric
-    :return: updated estimate of the metric
+    :return: updated estimate of the metric and its covariance
     """
     x10 = x  # initial estimate
     p10 = baselineStdDev * baselineStdDev  # uncertainty of initial estimate
@@ -280,9 +280,10 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
 
     # Compute total impact from direct and indirect
     impactValue, directImpactValue, indirectImpactValue = compute_impact_values(cyrce_input, impactCalcMode)
-    impactValue = 1
-    directImpactValue = 1
-    indirectImpactValue = 1
+    #   TODO WTF is this?
+    #    impactValue = 1
+    #    directImpactValue = 1
+    #    indirectImpactValue = 1
     # Set up entities; at this stage, just assets
     all_entities = AllEntities()
     asset_group = EntityGroup("assets")
@@ -307,7 +308,7 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
     threat_actor.set_capability(cyrce_input)
 
     tacRV = generate_pert_random_variables(modeValue=threat_actor.properties['capability'], gamma=10,
-                                           nIterations=numberOfMonteCarloRuns) #TODO -> setting gamma
+                                           nIterations=numberOfMonteCarloRuns)  # TODO -> setting gamma
 
     # Assign control values to each entity
     # TODO controls should not be tied to entity; but will go with an entity
@@ -376,7 +377,7 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
     # TODO make these entries optional, if that is deemed a good idea, then update them as below if there is info to
     # TODO use for the update, o/w use baseline
     # Compute Attack Motivator metric
-    attackMotivator0 = 0.5  # baseline value of 0.5  #TODO -> setting
+    attackMotivator0 = 0.5  # naive baseline value of 0.5  #TODO -> setting
     if attackAction == 'error':
         diligence = cyrce_input.threatActorInput.sophistication
         diligenceRV = generate_pert_random_variables(modeValue=diligence, gamma=50, nIterations=numberOfMonteCarloRuns)
@@ -389,7 +390,6 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
         attackMotivator, _ = update_metric(attackMotivator0, attackMotivator_)
 
     probability_scale_factor0 = scenario.probability_scale_factor
-
     probability_scale_factor = compute_metric(scenario.probability_scale_factor, attackMotivator, 'geometric')
 
     if scenario.attackLossType is None:
@@ -409,12 +409,12 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
 
     # TODO using this idea, but not sold on it
     # Using baseline Attack Surface metric, update it with attack surface values from inputs
-    attackSurface0 = 0.5  # baseline value of 0.5
+    attackSurface0 = 0.5  # naive baseline value of 0.5
     attackSurface_ = np.mean([cyrce_input.attackSurface.awareness, cyrce_input.attackSurface.opportunity])
     attackSurface, _ = update_metric(attackSurface0, attackSurface_)
 
     # Using baseline Exploitability metric, update it with exploitability value from inputs
-    exploitability0 = 0.5  # baseline value of 0.5
+    exploitability0 = 0.5  # naive baseline value of 0.5
     exploitability_ = cyrce_input.exploitability.easeOfExploit
     exploitability, _ = update_metric(exploitability0, exploitability_)
 
@@ -425,10 +425,7 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
     # Get random variable samples ahead of the MCS
     exploitabilityRV = generate_pert_random_variables(modeValue=exploitability,
                                                       nIterations=numberOfMonteCarloRuns)
-    attackSurfaceRV = generate_pert_random_variables(modeValue=attackSurface,
-                                                     nIterations=numberOfMonteCarloRuns)
-
-    vulnerabilityRV = compute_metric(exploitabilityRV, attackSurfaceRV, method='geometric')
+    vulnerabilityRV = generate_pert_random_variables(modeValue=vulnerability, nIterations=numberOfMonteCarloRuns)
 
     initial_access_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
     execution_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
@@ -438,33 +435,26 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
         a.assign_properties('attack_surface', attackSurface)
         a.assign_properties('vulnerability', compute_metric(exploitability, attackSurface, method='geometric'))
 
+    if scenario.attackThreatType == 'thirdparty':
+        initial_access_thirdpartyRV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
+        initial_access_thirdpartyLevelRV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns) / 10 + 0.9
+
     # *************************************
     # Comment movement_RV to mimic vista
     # *************************************
     movement_RV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
 
-    detectRV = generate_pert_random_variables(modeValue=cyrce_input.csf.detect.value,
-                                              gamma=0.1 + 100 * cyrce_input.csf.identify.value, #TODO -> setting ?
-                                              nIterations=numberOfMonteCarloRuns)
-
-    protectRV = generate_pert_random_variables(modeValue=cyrce_input.csf.protect.value,
-                                               gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                               nIterations=numberOfMonteCarloRuns)
-
     # Compute combined Protect and Detect metric
-    protectDetectRV = np.divide(np.add(detectRV, protectRV), 2)
-
-    respondRV = generate_pert_random_variables(modeValue=cyrce_input.csf.respond.value,
-                                               gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                               nIterations=numberOfMonteCarloRuns)
-
-    recoverRV = generate_pert_random_variables(modeValue=cyrce_input.csf.recover.value,
-                                               gamma=0.1 + 100 * cyrce_input.csf.identify.value,
-                                               nIterations=numberOfMonteCarloRuns)
+    protectDetectRV = generate_pert_random_variables(modeValue=(cyrce_input.csf.detect.value +
+                                                                cyrce_input.csf.protect.value) / 2,
+                                                     gamma=0.1 + 100 * cyrce_input.csf.identify.value,
+                                                     nIterations=numberOfMonteCarloRuns)
 
     # Compute combined Respond and Recover metric
-    respondRecoverRV = np.divide(np.add(respondRV, recoverRV), 2)
-
+    respondRecoverRV = generate_pert_random_variables(modeValue=(cyrce_input.csf.respond.value +
+                                                                 cyrce_input.csf.recover.value) / 2,
+                                                      gamma=0.1 + 100 * cyrce_input.csf.identify.value,
+                                                      nIterations=numberOfMonteCarloRuns)
     for run in run_mode:
         np.random.seed(random_seed)
         rng = np.random.default_rng(random_seed)
@@ -472,34 +462,33 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
         if run == 'inherent':
             protectDetectRV = 0 * protectDetectRV
             respondRecoverRV = 0 * respondRecoverRV
+
+#TODO still adopting CyInCE changes .....
         """
         ************************************************
         ERROR MC loop begins for inherent and residual *
         ************************************************
         Each iteration is a single "attack"
         """
-        errorRV = generate_uniform_random_variables(numberOfMonteCarloRuns)
-        makeErrorRVec = []
         if attackAction == 'error':
             for iteration in range(0, numberOfMonteCarloRuns):
-                a = rng.choice(all_entities.list, size=1)[0]
-                makeError = (1 - diligenceRV[iteration]) > protectDetectRV[iteration]
-                logging.info(' Error committed? : ' + str(makeError))
-                makeErrorRVec.append(int(makeError))
-                execution = False
+                makeError = True
                 if makeError:
-                    execution = errorRV[iteration] > protectDetectRV[iteration]
-                    logging.info(' Error mitigated?: ' + str(not execution))
+                    execution = 1 - diligenceRV[iteration] > protectDetectRV[iteration]
+                else:
+                    execution = False
                 impact = 0.
                 access = 0.
                 if execution:
                     access = 1.
                     impact = a.value * (1 - respondRecoverRV[iteration])
-                    logging.info(' Impact: ' + str(round(impact, 2)))
+                    #logging.info(' Impact: ' + str(round(impact, 2)))
                 a.manifest['risk'][iteration] = probability_scale_factor * impact
                 a.manifest['impact'][iteration] = impact
                 a.manifest['access'][iteration] = access
+
         else:
+
             """
             ********************
             *  MC loop begins  *
@@ -699,23 +688,23 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
             #     print("riskLevel_CI: " + str(np.round(a.riskLevel_confInt, 3)))
             #     print("--------------------------------")
 
-                # logger.info('output: ' + str(CyrceOutput(
-                #     overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
-                #     overallResidualLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
-                #     overallInherentImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
-                #     overallResidualImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
-                #     overallInherentRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
-                #     overallResidualRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
-                #     attackSurface=float(attackSurface),
-                #     exploitability=exploitability,
-                #     vulnerability=vulnerability,
-                #     threatActorCapacity=threat_actor.properties['capability'],
-                #     threatLevel=float(np.mean(threatLevel)),
-                #     probability_scale_factor0=float(probability_scale_factor0),
-                #     probability_scale_factor=float(probability_scale_factor),
-                #     attackMotivators=float(attackMotivator),
-                #     directImpact=float(directImpactValue),
-                #     indirectImpact=float(indirectImpactValue))))
+            # logger.info('output: ' + str(CyrceOutput(
+            #     overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+            #     overallResidualLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+            #     overallInherentImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+            #     overallResidualImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+            #     overallInherentRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
+            #     overallResidualRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
+            #     attackSurface=float(attackSurface),
+            #     exploitability=exploitability,
+            #     vulnerability=vulnerability,
+            #     threatActorCapacity=threat_actor.properties['capability'],
+            #     threatLevel=float(np.mean(threatLevel)),
+            #     probability_scale_factor0=float(probability_scale_factor0),
+            #     probability_scale_factor=float(probability_scale_factor),
+            #     attackMotivators=float(attackMotivator),
+            #     directImpact=float(directImpactValue),
+            #     indirectImpact=float(indirectImpactValue))))
 
     return CyrceOutput(
         overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
