@@ -1,1 +1,1 @@
-# CyberRiskComputationalEngine (CyRCE)
+# Simulation of Cyber Risk (SoCR)
