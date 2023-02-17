@@ -10,3 +10,4 @@ matplotlib~=3.6.1
 pybbn~=3.2.1
 anytree~=2.8.0
 joblib~=1.2.0
+flask_restful
