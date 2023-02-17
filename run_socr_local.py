@@ -1,4 +1,4 @@
-# SOCR
+# SOCR beta.1.0.0
 import json
 import os
 
