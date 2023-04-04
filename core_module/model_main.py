@@ -212,7 +212,7 @@ def update_attack_probability_given_probability(priorAttackProbability, timeWind
     return attackProbability, priorAttackProbability
 
 
-def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
+def update_metric_KF(x, z, baselineStdDev=0.2, measStdDev=0.1):
     """
     Function to update the estimate of a metric using a "measurement" of the metric, based on Kalman Filter
     :param x: initial estimate of the metric
@@ -229,9 +229,21 @@ def update_metric(x, z, baselineStdDev=0.2, measStdDev=0.1):
     return x11, p11
 
 
-def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=False):
+def update_metric(x):
     """
-    Main routine to run SOCR
+    Function to update the estimate of a metric
+    :param x: estimate of the metric
+    :return: updated estimate of the metric
+    """
+    if x is None:
+        return 0.5  # naive baseline value of 0.5  # TODO -> settings
+    else:
+        return x
+
+
+def run_socre_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=False):
+    """
+    Main routine to run SOCRE
     :param control_mode: controls mode, 'csf' or 'sp80053'
     :param run_mode: list of ways to run, 'inherent' or 'residual' or ...
     :param cyrce_input: input object
@@ -239,7 +251,6 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
     :return: outputs
     """
 
-    # TODO NETWORK ATTACK!
     deployed = False
     # used for testing, etc.
     if platform.uname()[1] == 'BAHG3479J3' and not sweep:  # local, not doing sweep
@@ -298,9 +309,6 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
 
     # Set up threat actor
     threat_actor = ThreatActor(type=cyrce_input.scenario.attackThreatType)
-    if cyrce_input.scenario.attackAction == 'error':  # current approach to error case
-        cyrce_input.threatActorInput.determination = 0
-        cyrce_input.threatActorInput.determinationWeight = 0
     threat_actor.assign_property('sophistication', cyrce_input.threatActorInput.sophistication)
     threat_actor.assign_property('resources', cyrce_input.threatActorInput.resources)
     threat_actor.assign_property('determination', cyrce_input.threatActorInput.determination)
@@ -377,20 +385,20 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
     # TODO make these entries optional, if that is deemed a good idea, then update them as below if there is info to
     # TODO use for the update, o/w use baseline
     # Compute Attack Motivator metric
-    attackMotivator0 = 0.5  # naive baseline value of 0.5  #TODO -> setting
     if attackAction == 'error':
         diligence = cyrce_input.threatActorInput.sophistication
-        diligenceRV = generate_pert_random_variables(modeValue=diligence, gamma=50, nIterations=numberOfMonteCarloRuns)
+        diligenceRV = generate_pert_random_variables(modeValue=diligence, nIterations=numberOfMonteCarloRuns)
         attackMotivator = 1  # no adjustment
     else:
         attackMotivator_ = np.mean([cyrce_input.attackMotivators.reward,  # TODO weights?
                                     cyrce_input.attackMotivators.appeal,
                                     cyrce_input.attackMotivators.targeting,
                                     cyrce_input.attackMotivators.perceivedDefenses])
-        attackMotivator, _ = update_metric(attackMotivator0, attackMotivator_)
+        attackMotivator = update_metric(attackMotivator_)
 
     probability_scale_factor0 = scenario.probability_scale_factor
-    probability_scale_factor = compute_metric(scenario.probability_scale_factor, attackMotivator, 'geometric')
+    probability_scale_factor = compute_metric(scenario.probability_scale_factor, attackMotivator,
+                                              method='geometric')
 
     if scenario.attackLossType is None:
         scenario.attackLossType = np.random.choice(['c', 'i', 'a'])  # pick a loss type randomly
@@ -411,12 +419,11 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
     # Using baseline Attack Surface metric, update it with attack surface values from inputs
     attackSurface0 = 0.5  # naive baseline value of 0.5
     attackSurface_ = np.mean([cyrce_input.attackSurface.awareness, cyrce_input.attackSurface.opportunity])
-    attackSurface, _ = update_metric(attackSurface0, attackSurface_)
+    attackSurface = update_metric(attackSurface_)
 
     # Using baseline Exploitability metric, update it with exploitability value from inputs
-    exploitability0 = 0.5  # naive baseline value of 0.5
     exploitability_ = cyrce_input.exploitability.easeOfExploit
-    exploitability, _ = update_metric(exploitability0, exploitability_)
+    exploitability = update_metric(exploitability_)
 
     # Compute Vulnerability metrics
     # MODEL:  flux = permeability * area * gradient(=1)
@@ -437,7 +444,8 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
 
     if scenario.attackThreatType == 'thirdparty':
         initial_access_thirdpartyRV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns)
-        initial_access_thirdpartyLevelRV = generate_uniform_random_variables(nIterations=numberOfMonteCarloRuns) / 10 + 0.9
+        tac_effect = threat_actor.properties['capability'] / 10.
+        initial_access_thirdpartyLevelRV = 0.9 + tac_effect
 
     # *************************************
     # Comment movement_RV to mimic vista
@@ -465,24 +473,21 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
 
 #TODO still adopting CyInCE changes .....
         """
-        ************************************************
-        ERROR MC loop begins for inherent and residual *
-        ************************************************
-        Each iteration is a single "attack"
+        ***********************
+        ERROR MC loop begins  *
+        ***********************
+        Each iteration is a single "error event"
         """
         if attackAction == 'error':
             for iteration in range(0, numberOfMonteCarloRuns):
-                makeError = True
-                if makeError:
-                    execution = 1 - diligenceRV[iteration] > protectDetectRV[iteration]
-                else:
-                    execution = False
+                execution = 1 - diligenceRV[iteration] > protectDetectRV[iteration]
                 impact = 0.
                 access = 0.
                 if execution:
                     access = 1.
                     impact = a.value * (1 - respondRecoverRV[iteration])
                     #logging.info(' Impact: ' + str(round(impact, 2)))
+
                 a.manifest['risk'][iteration] = probability_scale_factor * impact
                 a.manifest['impact'][iteration] = impact
                 a.manifest['access'][iteration] = access
@@ -503,7 +508,7 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
                 destination = attack_mg_target
                 entryNode = attack_mg_target
 
-                initial_access = True
+                seeking_initial_access = True
                 currentNode = None
                 failedNodeList = []
 
@@ -525,7 +530,7 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
 
                     while tryCount <= threat_actor.attempt_limit:
 
-                        if initial_access:
+                        if seeking_initial_access:
                             from_node = attackDictElement['origin']
                             objective_node = attackDictElement['entryPoint']
                             logger_from_string = attackDictElement['origin'].label
@@ -551,23 +556,30 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
                             else:
                                 logging.info('   End of path reached, attacker trying again')
 
-                        # Determine if threat actor gains INITIAL ACCESS
-                        if initial_access:
+                        # Determine if threat actor gains INITIAL ACCESS to entity
+                        if seeking_initial_access:
                             if attackAction == 'misuse':
-                                access = True  # this is for malicious insider, who has initial access
+                                #access = True  # this is for an insider, who we assume to have initial access and we assume is malicious
+                                access = True
                             else:
-                                access = determine_initial_access(tacRV[iteration],
-                                                                  protectDetectRV[iteration],
-                                                                  vulnerabilityRV[iteration],
-                                                                  initial_access_RV[iteration])
+                                if scenario.attackThreatType == 'thirdparty':  # hacking modality
+                                    #access = True  # assume third party has initial access at least 90% of the time
+                                    access = initial_access_thirdpartyRV[iteration] < \
+                                                       initial_access_thirdpartyLevelRV[iteration]
+                                else:
+                                    access = determine_initial_access(tacRV[iteration],
+                                                                      protectDetectRV[iteration],
+                                                                      vulnerabilityRV[iteration],
+                                                                      initial_access_RV[iteration])
+
                         else:  # Determine if threat actor moves to next node
-                            access = determine_movement(threat_actor.properties['capability'],
+                            access = determine_movement(tacRV[iteration],
                                                         protectDetectRV[iteration],
                                                         exploitabilityRV[iteration],
                                                         movement_RV[iteration])
 
                         if nextNode is not None:
-                            if access is False:
+                            if not access:
                                 tryCount += 1
                                 failedNodeList.append(nextNode)
                                 if tryCount > threat_actor.attempt_limit:
@@ -578,12 +590,12 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
                                     logging.info('   Failed, trying again')
                             else:
                                 logging.info('    Next hop enabled ...')
-                                initial_access = False
+                                seeking_initial_access = False
                                 currentNode = nextNode
 
                             if currentNode in attackDictElement['destination']:
                                 done = True
-                                initial_access = False
+                                seeking_initial_access = False
                                 logging.info('       Reached target                                             XXX')
                                 break
 
@@ -591,7 +603,7 @@ def run_socr_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=
                         done = True
 
                     if nextNode is not None:
-                        execution = determine_execution(threat_actor.properties['capability'],
+                        execution = determine_execution(tacRV[iteration],
                                                         protectDetectRV[iteration],
                                                         exploitabilityRV[iteration],
                                                         execution_RV[iteration])

@@ -1,11 +1,10 @@
-# SOCR beta.1.0.0
+# SOCRE beta.1.0.0
 import json
 import os
 
 from api_resources.cyrce_resource import CyrceResource
 from api_resources.ttp_coverage_resource import TtpCoverageResource
-from core_module.analysis import run_ttp_coverage_metric
-from core_module.model_main import run_socr_core
+from core_module.model_main import run_socre_core
 from input_module.cyrce_input import CyrceInput, \
     AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, DirectImpact, Impact, IndirectImpact, \
     CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, \
@@ -87,7 +86,7 @@ if __name__ == '__main__':
         sp80053 = None
     else:
         csf = None
-    socr_input = CyrceInput(attackMotivators=attackMotivators,
+    socre_input = CyrceInput(attackMotivators=attackMotivators,
                              attackSurface=attackSurface,
                              exploitability=exploitability,
                              threatActorInput=threatActorInput,
@@ -95,7 +94,7 @@ if __name__ == '__main__':
                              csf=csf, sp80053=sp80053,
                              scenario=scenario)
 
-    output_csf = run_socr_core(cyrce_input=socr_input, control_mode=control_mode, run_mode=['residual', 'residual'])
+    output_csf = run_socre_core(cyrce_input=socre_input, control_mode=control_mode, run_mode=['residual', 'residual'])
     #output_80053 = run_cyrce(cyrce_input=cyrce_input, control_mode='sp80053', run_mode=['residual', 'residual'])
 
     # mimic api
@@ -112,5 +111,5 @@ if __name__ == '__main__':
         json_data = json.load(file)
 
     ttp_res = TtpCoverageResource()
-    ttp_output = run_ttp_coverage_metric(ttpInput=ttp_res.jsonToInput(json_data))
-    print(ttp_output)
+    # ttp_output = run_ttp_coverage_metric(ttpInput=ttp_res.jsonToInput(json_data))
+    # print(ttp_output)

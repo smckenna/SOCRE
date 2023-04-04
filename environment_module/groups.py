@@ -24,6 +24,7 @@ class NetworkGroup(object):
 
     def __init__(self, label):
         self.label = label
+        self.is_hub = False
         self.node = None
         self.assets = []
         self.ip_address_set = None

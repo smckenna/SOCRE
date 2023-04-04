@@ -39,7 +39,7 @@ class Network(object):
         while ct < 5:  # TODO what should this be?  prob a function of network size
             p_ = np.random.choice(np.arange(0, len(all_paths)))
             p = all_paths[p_]
-            path = [n for n in p if n != 'hub']
+            path = [n for n in p if network_model.graph.nodes[n]['type'] != 'hub']
             if len(path) == 1:
                 ng = path[0]
             else:
@@ -99,7 +99,8 @@ class Network(object):
                 ip_address_list.append(grp_rng)
 
             network_group.ip_address_set = IPSet(ip_address_list)
-
+            if self.graph.nodes[n]['type'] == 'hub':
+                network_group.is_hub = True
             self.list_of_network_groups.append(network_group)
 
         # nx.write_graphml(self.graph, "../model_resources/network_model.graphml")
