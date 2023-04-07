@@ -94,8 +94,9 @@ if __name__ == '__main__':
                              csf=csf, sp80053=sp80053,
                              scenario=scenario)
 
-    output_csf = run_socre_core(cyrce_input=socre_input, control_mode=control_mode, run_mode=['residual', 'residual'])
+    output_csf = run_socre_core(cyrce_input=socre_input, control_mode=control_mode, run_mode=['residual'])
     #output_80053 = run_cyrce(cyrce_input=cyrce_input, control_mode='sp80053', run_mode=['residual', 'residual'])
+    print(output_csf)
 
     # mimic api
     with open('request.json') as file:
@@ -104,11 +105,12 @@ if __name__ == '__main__':
     cy_res = CyrceResource()
 
     #output_csf_api = run_cyrce(control_mode='csf', cyrce_input=cy_res.json_to_input(control_mode='csf', json_data=json_data), run_mode=['residual', 'residual']).reprJSON()
-    #output_80053_api = run_cyrce(control_mode='sp80053', cyrce_input=cy_res.json_to_input(json_data), run_mode=['residual', 'residual']).reprJSON()
+    #output = run_socre_core( cyrce_input=cy_res.json_to_input(json_data), run_mode=['residual']).reprJSON()
+    #print(output)
 
     # mimic api
-    with open(os.path.join(os.path.dirname(__file__), 'request_' + scenario.attackAction + '.json')) as file:
-        json_data = json.load(file)
+    #with open(os.path.join(os.path.dirname(__file__), 'request_' + scenario.attackAction + '.json')) as file:
+    #    json_data = json.load(file)
 
     ttp_res = TtpCoverageResource()
     # ttp_output = run_ttp_coverage_metric(ttpInput=ttp_res.jsonToInput(json_data))
