@@ -28,9 +28,9 @@ desktop,EmployeeWorkstation,192.168.5.5,research,uk,,,0,windows_10,1,0
 server,LogServer,192.168.4.1,it,mena,apache:log4j,devops,0,redhat:enterprise_linux:8.6,100,0
 server,DevServer,192.168.4.2,it,mena,sonarsource:sonarqube:7.1,devops,0,redhat:enterprise_linux:8.6,10000,1
 server,BackupServer,192.168.4.3,it,mena,atlassian:confluence_server,devops,0,redhat:enterprise_linux:7.4,10000,1
-server,SecureServer,192.168.4.4,it,mena,atlassian:confluence_server,devops,0,redhat:enterprise_linux:8.1,10000,1
+server,SecureServer,192.168.4.4,it,mena,atlassian:confluence_server,devops,0,redhat:enterprise_linux:8.1,10000,0
 server,WebServer,192.168.3.1,hr,usa,workday:workday:22.1,webapp_hr,0,redhat:enterprise_linux:6.8,100,0
-server,MySQLDB,192.168.3.2,hr,usa,workday:workday:22.1,data_hr,0,microsoft:windows_server_2016,1000,1
+server,MySQLDB,192.168.3.2,hr,usa,workday:workday:22.1,data_hr,0,microsoft:windows_server_2016,1000,0
 desktop,EmployeeWorkstation,192.168.3.3,hr,usa,,,0,microsoft:windows_10,10,0
 desktop,EmployeeWorkstation,192.168.3.4,hr,usa,,,0,microsoft:windows_10,1,0
 desktop,EmployeeWorkstation,192.168.3.5,hr,usa,,,0,microsoft:windows_10,1,0

@@ -1,5 +1,5 @@
 INPUTS = {
-    'numberOfMonteCarloRuns': 100,
+    'numberOfMonteCarloRuns': 1000,
     'graph_model_file': '../model_resources/demo_network_model.graphml',
     'bbn_file': '../scenario_module/scenario_bbn_dbir.json',
     'assets_file': './model_resources/demo_assets.csv',

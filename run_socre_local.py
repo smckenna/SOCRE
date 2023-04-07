@@ -22,7 +22,7 @@ if __name__ == '__main__':
     directImpact = DirectImpact(2, 5, 2, 5)
     indirectImpact = IndirectImpact(5, 2, 2, 5)
     impact = Impact(directImpact, indirectImpact)
-    scenario = Scenario(attackAction='hacking', attackThreatType='threatactor', attackTarget='label:EmailServer',
+    scenario = Scenario(attackAction='hacking', attackThreatType='threatactor', attackTarget='label:BackupServer',
                         attackLossType='c', attackIndustry='finance', attackGeography='na', orgSize="large")
     # scenario = Scenario()  # know nothing case; posterior is prior
     identify = CsfIdentify(IDAM=IDAM(0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8),

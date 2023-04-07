@@ -1,5 +1,5 @@
 """
-Simulation of Cyber Risk-  SOCR
+Simulation of Cyber Risk Engine - SOCRE
 """
 import datetime
 import os
@@ -344,12 +344,13 @@ def run_socre_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep
     attackLossType = cyrce_input.scenario.attackLossType
     attackThreatType = cyrce_input.scenario.attackThreatType
     orgSize = cyrce_input.scenario.orgSize
+    attackTarget = cyrce_input.scenario.attackTarget
 
     bbn_file = os.path.join(os.path.dirname(__file__), INPUTS['bbn_file'])
 
     scenario = ScenarioModel.Scenario(attackAction=attackAction, attackThreatType=attackThreatType,
                                       attackGeography=attackGeography, attackLossType=attackLossType,
-                                      attackIndustry=attackIndustry, orgSize=orgSize)
+                                      attackIndustry=attackIndustry, orgSize=orgSize, attackTarget=attackTarget)
     scenario.determine_scenario_probability_scale_factor(bbn_file=bbn_file, verbose=False)
 
     # Abstraction groups
@@ -620,7 +621,8 @@ def run_socre_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep
                         nextNode.assets[0].manifest['access'][iteration] = access
 
         # Collect MCS results to calculate the outputs we want (for the single target node)
-        for a in [_ for _ in all_entities.list if _.type == 'server' and _.critical]:
+#        for a in [_ for _ in all_entities.list if _.type == 'server' and _.critical]:
+        for a in [_ for _ in all_entities.list if _.machine_group in attack_mg_target[0].label and _.critical]:
             a.lh_vec = probability_scale_factor * a.manifest['access']
             a.imp_vec = a.manifest['impact']
             a.risk_vec = np.multiply(a.lh_vec, a.imp_vec)
@@ -718,6 +720,7 @@ def run_socre_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep
             #     directImpact=float(directImpactValue),
             #     indirectImpact=float(indirectImpactValue))))
 
+    print(a.label)
     return CyrceOutput(
         overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
         overallResidualLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
