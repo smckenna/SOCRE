@@ -1,13 +1,14 @@
 # SOCRE beta.1.0.0
 import json
 import os
+import networkx as nx
 
 from api_resources.cyrce_resource import CyrceResource
 from api_resources.ttp_coverage_resource import TtpCoverageResource
 from core_module.model_main import run_socre_core
 from input_module.cyrce_input import CyrceInput, \
     AttackMotivators, Exploitability, AttackSurface, ThreatActorInput, DirectImpact, Impact, IndirectImpact, \
-    CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, \
+    CsfFunction, CsfIdentify, CsfProtect, CsfDetect, CsfRespond, CsfRecover, MitreAttackControl, Config, \
     IDAM, IDBE, IDGV, IDRA, IDRM, IDSC, PRAC, PRAT, PRDS, PRIP, PRMA, \
     PRPT, DEAE, DECM, DEDP, RSRP, RSCO, RSAN, RSMI, RSIM, RCRP, RCIM, RCCO, AT_1, AT_2, AT_3, AT_4, RA_1, RA_2, RA_3, \
     RA_5, RA_7, RA_9, RA, Sp80053_
@@ -22,7 +23,7 @@ if __name__ == '__main__':
     directImpact = DirectImpact(2, 5, 2, 5)
     indirectImpact = IndirectImpact(5, 2, 2, 5)
     impact = Impact(directImpact, indirectImpact)
-    scenario = Scenario(attackAction='hacking', attackThreatType='threatactor', attackTarget='label:BackupServer',
+    scenario = Scenario(attackAction='error', attackThreatType='insider', attackTarget='label:BackupServer',
                         attackLossType='c', attackIndustry='finance', attackGeography='na', orgSize="large")
     # scenario = Scenario()  # know nothing case; posterior is prior
     identify = CsfIdentify(IDAM=IDAM(0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
@@ -72,7 +73,8 @@ if __name__ == '__main__':
     ra_5 = RA_5(value=0.25)
     ra_7 = RA_7(value=0.75)
     ra_9 = RA_9(value=0.5)
-    ra = RA(value=0.5, RA_1=ra_1.value, RA_2=ra_2.value, RA_3=ra_3.value, RA_5=ra_5.value, RA_7=ra_7.value, RA_9=ra_9.value)
+    ra = RA(value=0.5, RA_1=ra_1.value, RA_2=ra_2.value, RA_3=ra_3.value, RA_5=ra_5.value, RA_7=ra_7.value,
+            RA_9=ra_9.value)
     at_1 = AT_1(value=0.25)
     at_2 = AT_2(value=0.5)
     at_3 = AT_3(value=0.75)
@@ -86,16 +88,32 @@ if __name__ == '__main__':
         sp80053 = None
     else:
         csf = None
-    socre_input = CyrceInput(attackMotivators=attackMotivators,
+
+    controls = [MitreAttackControl(label="AC-1", score=0.1, ttps=["T1011", "T1012", "T1013"]),
+                MitreAttackControl(label="AC-2", score=0.4, ttps=["T2011", "T2012", "T2013"])]
+
+    user_config = Config(engine_version="1.0.0",
+                         number_mc_iterations=1000,
+                         impact_model="score",
+                         impact_calc_mode="mean",
+                         risk_upper_score_bound=5,
+                         likelihood_upper_score_bound=5,
+                         impact_upper_score_bound=5)
+
+    socre_input = CyrceInput(config=user_config,
+                             attackMotivators=attackMotivators,
                              attackSurface=attackSurface,
                              exploitability=exploitability,
                              threatActorInput=threatActorInput,
                              impact=impact,
-                             csf=csf, sp80053=sp80053,
-                             scenario=scenario)
+                             csf=csf,
+                             scenario=scenario,
+                             mitreControls=controls)
+    graph = nx.read_graphml(os.path.join(os.path.dirname(__file__),
+                                         './model_resources/demo_network_model.graphml'))
 
-    output_csf = run_socre_core(cyrce_input=socre_input, control_mode=control_mode, run_mode=['residual'])
-    #output_80053 = run_cyrce(cyrce_input=cyrce_input, control_mode='sp80053', run_mode=['residual', 'residual'])
+    output_csf = run_socre_core(cyrce_input=socre_input, graph=graph, control_mode=control_mode, run_mode=['residual'])
+    # output_80053 = run_cyrce(cyrce_input=cyrce_input, control_mode='sp80053', run_mode=['residual', 'residual'])
     print(output_csf)
 
     # mimic api
@@ -104,12 +122,12 @@ if __name__ == '__main__':
 
     cy_res = CyrceResource()
 
-    #output_csf_api = run_cyrce(control_mode='csf', cyrce_input=cy_res.json_to_input(control_mode='csf', json_data=json_data), run_mode=['residual', 'residual']).reprJSON()
-    #output = run_socre_core( cyrce_input=cy_res.json_to_input(json_data), run_mode=['residual']).reprJSON()
-    #print(output)
+    # output_csf_api = run_cyrce(control_mode='csf', cyrce_input=cy_res.json_to_input(control_mode='csf', json_data=json_data), run_mode=['residual', 'residual']).reprJSON()
+    # output = run_socre_core( cyrce_input=cy_res.json_to_input(json_data), run_mode=['residual']).reprJSON()
+    # print(output)
 
     # mimic api
-    #with open(os.path.join(os.path.dirname(__file__), 'request_' + scenario.attackAction + '.json')) as file:
+    # with open(os.path.join(os.path.dirname(__file__), 'request_' + scenario.attackAction + '.json')) as file:
     #    json_data = json.load(file)
 
     ttp_res = TtpCoverageResource()

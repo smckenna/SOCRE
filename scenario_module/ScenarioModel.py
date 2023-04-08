@@ -111,7 +111,7 @@ class Scenario:
 
 
 if __name__ == '__main__':
-    bbn_file = os.path.join(os.path.dirname(__file__), './scenario_bbn_dbir.json')
+    bbn_file = os.path.join(os.path.dirname(__file__), 'scenario_bbn_2022_dbir.json')
 
     # scenario = Scenario(attackLossType='c', orgSize='small', attackAction='hacking', attackGeography='apac',
     #                    attackThreatType='external', aprioriProbability=0.5)

@@ -6,7 +6,6 @@ import os
 import platform
 from collections import OrderedDict
 
-import networkx as nx
 import pandas as pd
 from scipy import interpolate
 from scipy.stats import poisson
@@ -129,18 +128,18 @@ def determine_movement(tac, movement_control, exploitability, movement_RV):
     return result
 
 
-def determine_impact(impact_control, entity):
+def determine_impact(impact_control, value):
     """
     Determine "impact" (ATT&CK C&C, Exfil, Impact) success or failure
     I = (1 - RR) * VAL
     :param impact_control: control against "impact" TTPs
-    :param entity: entity object
+    :param value: value of entity
     :return: impact value
     """
-    impact = 0
-    for a in [_ for _ in entity.assets if _.type == 'server' and _.critical]:
-        impact = a.value * (1 - impact_control)
-    return impact
+    #impact = 0
+    #for a in [_ for _ in entity.assets if _.type == 'server' and _.critical]:
+    #    impact = a.value * (1 - impact_control)
+    return value * (1 - impact_control)
 
 
 def compute_impact_values(cyrce_input, impactCalcMode='mean'):
@@ -241,17 +240,17 @@ def update_metric(x):
         return x
 
 
-def run_socre_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep=False):
+def run_socre_core(cyrce_input, graph, control_mode='csf', run_mode=['residual'], sweep=False):
     """
     Main routine to run SOCRE
+    :param cyrce_input: input object
+    :param graph: network model as a graph
     :param control_mode: controls mode, 'csf' or 'sp80053'
     :param run_mode: list of ways to run, 'inherent' or 'residual' or ...
-    :param cyrce_input: input object
     :param sweep: flag to indicate if we're doing a parameter sweep
     :return: outputs
     """
 
-    deployed = False
     # used for testing, etc.
     if platform.uname()[1] == 'BAHG3479J3' and not sweep:  # local, not doing sweep
         random_seed = 101798
@@ -284,21 +283,18 @@ def run_socre_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep
     np.random.seed(random_seed)
     logging.info(str(random_seed))
 
-    graph = nx.read_graphml(os.path.join(os.path.dirname(__file__), INPUTS['graph_model_file']))
+    #graph = nx.read_graphml(os.path.join(os.path.dirname(__file__), INPUTS['graph_model_file']))
 
-    numberOfMonteCarloRuns = INPUTS['numberOfMonteCarloRuns']
-    impactCalcMode = INPUTS['impactCalcMode']
+    numberOfMonteCarloRuns = cyrce_input.config.number_mc_iterations
+    impactCalcMode = cyrce_input.config.impact_calc_mode
 
     # Compute total impact from direct and indirect
     impactValue, directImpactValue, indirectImpactValue = compute_impact_values(cyrce_input, impactCalcMode)
-    #   TODO WTF is this?
-    #    impactValue = 1
-    #    directImpactValue = 1
-    #    indirectImpactValue = 1
+
     # Set up entities; at this stage, just assets
     all_entities = AllEntities()
     asset_group = EntityGroup("assets")
-    df = pd.read_csv(INPUTS['assets_file'])
+    df = pd.read_csv("./model_resources/demo_assets.csv")
     for idx, row in df.iterrows():
         entity = Entity(label=row['label'], type=row['type'], critical=bool(row['critical']))
         entity.value = impactValue * row['value']
@@ -614,7 +610,7 @@ def run_socre_core(cyrce_input, control_mode='csf', run_mode=['residual'], sweep
                         access = 0.
                         if execution:
                             access = 1.
-                            impact = determine_impact(respondRecoverRV[iteration], nextNode)
+                            impact = determine_impact(respondRecoverRV[iteration], nextNode.assets[0].value)
                             logging.info('             Impact: ' + str(round(impact, 2)))
                         nextNode.assets[0].manifest['risk'][iteration] = probability_scale_factor * impact
                         nextNode.assets[0].manifest['impact'][iteration] = impact

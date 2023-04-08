@@ -1,4 +1,18 @@
-from config import THREAT_ACTOR_CAPACITY_VALUES, THREAT_ACTOR_CAPACITY_WEIGHTS
+from typing import List
+from config import THREAT_ACTOR_CAPABILITY_VALUES, THREAT_ACTOR_CAPABILITY_WEIGHTS
+from api_resources.ttp_coverage_resource import MitreAttackControl
+
+
+class Config:
+    def __init__(self, engine_version: str, number_mc_iterations: int, impact_model: str, impact_calc_mode: str,
+                 risk_upper_score_bound: float, likelihood_upper_score_bound: float, impact_upper_score_bound: float):
+        self.engine_version = engine_version
+        self.number_mc_iterations = number_mc_iterations
+        self.impact_model = impact_model
+        self.impact_calc_mode = impact_calc_mode
+        self.risk_upper_score_bound = risk_upper_score_bound
+        self.likelihood_upper_score_bound = likelihood_upper_score_bound
+        self.impact_upper_score_bound = impact_upper_score_bound
 
 
 class AttackMotivators:
@@ -23,12 +37,12 @@ class Exploitability:
 class ThreatActorInput:
     def __init__(self, determination: str, resources: str, sophistication: str):
         # TODO make it so if they only know type, then pass that and the other 3 are populated based on type
-        self.sophistication = THREAT_ACTOR_CAPACITY_VALUES['sophistication'][sophistication]
-        self.resources = THREAT_ACTOR_CAPACITY_VALUES['resources'][resources]
-        self.determination = THREAT_ACTOR_CAPACITY_VALUES['determination'][determination]
-        self.sophisticationWeight = THREAT_ACTOR_CAPACITY_WEIGHTS['sophistication']
-        self.resourcesWeight = THREAT_ACTOR_CAPACITY_WEIGHTS['resources']
-        self.determinationWeight = THREAT_ACTOR_CAPACITY_WEIGHTS['determination']
+        self.sophistication = THREAT_ACTOR_CAPABILITY_VALUES['sophistication'][sophistication]
+        self.resources = THREAT_ACTOR_CAPABILITY_VALUES['resources'][resources]
+        self.determination = THREAT_ACTOR_CAPABILITY_VALUES['determination'][determination]
+        self.sophisticationWeight = THREAT_ACTOR_CAPABILITY_WEIGHTS['sophistication']
+        self.resourcesWeight = THREAT_ACTOR_CAPABILITY_WEIGHTS['resources']
+        self.determinationWeight = THREAT_ACTOR_CAPABILITY_WEIGHTS['determination']
 
 
 class DirectImpact:
@@ -1593,7 +1607,7 @@ class SR:
 
 
 class Sp80053_:
-    def __init__(self, AT: AT,  RA: RA, ):
+    def __init__(self, AT: AT, RA: RA, ):
         self.AT = AT
         self.RA = RA
 
@@ -1624,20 +1638,24 @@ class Sp80053:
 class CyrceInput:
 
     def __init__(self,
+                 config: Config,
                  attackMotivators: AttackMotivators,
                  attackSurface: AttackSurface,
                  exploitability: Exploitability,
                  threatActorInput: ThreatActorInput,
                  impact: Impact, scenario: Scenario,
-                 csf: CsfFunction, sp80053: Sp80053):
+                 csf: CsfFunction,
+                 mitreControls: List[MitreAttackControl]):
+
+        self.config = config
         self.impact = impact
         self.threatActorInput = threatActorInput
         self.attackSurface = attackSurface
         self.exploitability = exploitability
         self.attackMotivators = attackMotivators
         self.csf = csf
-        self.sp80053 = sp80053
         self.scenario = scenario
+        self.mitreControls = mitreControls
 
 
 class CyrceTtpCoverageInput:
