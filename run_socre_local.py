@@ -23,7 +23,7 @@ if __name__ == '__main__':
     directImpact = DirectImpact(2, 5, 2, 5)
     indirectImpact = IndirectImpact(5, 2, 2, 5)
     impact = Impact(directImpact, indirectImpact)
-    scenario = Scenario(attackAction='error', attackThreatType='insider', attackTarget='label:BackupServer',
+    scenario = Scenario(attackAction='hacking', attackThreatType='threatactor', attackTarget='label:BackupServer',
                         attackLossType='c', attackIndustry='finance', attackGeography='na', orgSize="large")
     # scenario = Scenario()  # know nothing case; posterior is prior
     identify = CsfIdentify(IDAM=IDAM(0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
@@ -114,8 +114,8 @@ if __name__ == '__main__':
 
     output_csf = run_socre_core(cyrce_input=socre_input, graph=graph, control_mode=control_mode, run_mode=['residual'])
     # output_80053 = run_cyrce(cyrce_input=cyrce_input, control_mode='sp80053', run_mode=['residual', 'residual'])
-    print(output_csf)
-
+    #print(output_csf)
+    output_csf.to_csv('foo.csv', index=None)
     # mimic api
     with open('request.json') as file:
         json_data = json.load(file)

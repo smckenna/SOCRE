@@ -295,8 +295,9 @@ def run_socre_core(cyrce_input, graph, control_mode='csf', run_mode=['residual']
         rng = np.random.default_rng()
         random_seed = int(rng.random() * 100000)
 
-    np.random.seed(random_seed)
+    #np.random.seed(random_seed)
     logging.info(str(random_seed))
+    random_state = np.random.RandomState(random_seed)
 
     # graph = nx.read_graphml(os.path.join(os.path.dirname(__file__), INPUTS['graph_model_file']))
 
@@ -326,8 +327,8 @@ def run_socre_core(cyrce_input, graph, control_mode='csf', run_mode=['residual']
     threat_actor.set_attempt_limit()
     threat_actor.set_capability(cyrce_input)
 
-    tacRV = generate_pert_random_variables(modeValue=threat_actor.properties['capability'], gamma=10,
-                                           nIterations=number_of_monte_carlo_runs)  # TODO -> setting gamma
+    tacRV = generate_pert_random_variables(random_state=random_state, mode_value=threat_actor.properties['capability'],
+                                           gamma=10, nIterations=number_of_monte_carlo_runs)  # TODO -> setting gamma
 
     # Assign control values to each entity
     # TODO controls should not be tied to entity; but will go with an entity
@@ -399,7 +400,8 @@ def run_socre_core(cyrce_input, graph, control_mode='csf', run_mode=['residual']
     # Compute Attack Motivator metric
     if attack_action == 'error':
         diligence = cyrce_input.threatActorInput.sophistication
-        diligence_RV = generate_pert_random_variables(modeValue=diligence, nIterations=number_of_monte_carlo_runs)
+        diligence_RV = generate_pert_random_variables(random_state=random_state, mode_value=diligence,
+                                                      nIterations=number_of_monte_carlo_runs)
         attack_motivator = 1  # no adjustment
     else:
         attack_motivator_ = np.mean([cyrce_input.attackMotivators.reward,  # TODO weights?
@@ -441,12 +443,15 @@ def run_socre_core(cyrce_input, graph, control_mode='csf', run_mode=['residual']
     vulnerability = compute_metric(exploitability, attack_surface, method='geometric')
 
     # Get random variable samples ahead of the MCS
-    exploitability_RV = generate_pert_random_variables(modeValue=exploitability,
+    exploitability_RV = generate_pert_random_variables(random_state=random_state, mode_value=exploitability,
                                                        nIterations=number_of_monte_carlo_runs)
-    vulnerability_RV = generate_pert_random_variables(modeValue=vulnerability, nIterations=number_of_monte_carlo_runs)
+    vulnerability_RV = generate_pert_random_variables(random_state=random_state, mode_value=vulnerability,
+                                                      nIterations=number_of_monte_carlo_runs)
 
-    initial_access_RV = generate_uniform_random_variables(nIterations=number_of_monte_carlo_runs)
-    execution_RV = generate_uniform_random_variables(nIterations=number_of_monte_carlo_runs)
+    initial_access_RV = generate_uniform_random_variables(random_state=random_state,
+                                                          nIterations=number_of_monte_carlo_runs)
+    execution_RV = generate_uniform_random_variables(random_state=random_state,
+                                                     nIterations=number_of_monte_carlo_runs)
 
     for a in all_entities.list:
         a.assign_properties('exploitability', exploitability)
@@ -454,26 +459,28 @@ def run_socre_core(cyrce_input, graph, control_mode='csf', run_mode=['residual']
         a.assign_properties('vulnerability', compute_metric(exploitability, attack_surface, method='geometric'))
 
     if scenario.attackThreatType == 'thirdparty':
-        initial_access_thirdparty_RV = generate_uniform_random_variables(nIterations=number_of_monte_carlo_runs)
+        initial_access_thirdparty_RV = generate_uniform_random_variables(random_state=random_state,
+                                                                         nIterations=number_of_monte_carlo_runs)
         tac_effect = threat_actor.properties['capability'] / 10.
         initial_access_thirdparty_level_RV = 0.9 + tac_effect
 
-    movement_RV = generate_uniform_random_variables(nIterations=number_of_monte_carlo_runs)
+    movement_RV = generate_uniform_random_variables(random_state=random_state, nIterations=number_of_monte_carlo_runs)
 
     # Compute combined Protect and Detect metric
-    protect_detect_RV = generate_pert_random_variables(modeValue=(cyrce_input.csf.detect.value +
-                                                                  cyrce_input.csf.protect.value) / 2,
+    protect_detect_RV = generate_pert_random_variables(random_state=random_state,
+                                                       mode_value=(cyrce_input.csf.detect.value + cyrce_input.csf.protect.value) / 2,
                                                        gamma=0.1 + 100 * cyrce_input.csf.identify.value,
                                                        nIterations=number_of_monte_carlo_runs)
 
     # Compute combined Respond and Recover metric
-    respond_recover_RV = generate_pert_random_variables(modeValue=(cyrce_input.csf.respond.value +
-                                                                   cyrce_input.csf.recover.value) / 2,
+    respond_recover_RV = generate_pert_random_variables(random_state=random_state,
+                                                        mode_value=(cyrce_input.csf.respond.value + cyrce_input.csf.recover.value) / 2,
                                                         gamma=0.1 + 100 * cyrce_input.csf.identify.value,
                                                         nIterations=number_of_monte_carlo_runs)
     for run in run_mode:
-        np.random.seed(random_seed)
-        rng = np.random.default_rng(random_seed)
+        #np.random.seed(random_seed)
+        #rng = np.random.default_rng(random_seed)
+        #random_state = np.random.RandomState(random_seed)
 
         if run == 'inherent':
             protect_detect_RV = 0.
@@ -548,7 +555,8 @@ def run_socre_core(cyrce_input, graph, control_mode='csf', run_mode=['residual']
                         next_node = network_model.from_node_to_node(from_node=from_node,
                                                                     objective_list=objective_node,
                                                                     network_model=network_model,
-                                                                    failed_node_list=failed_node_list)
+                                                                    failed_node_list=failed_node_list,
+                                                                    random_state=random_state)
                         if next_node is not None:
                             logging.info(" " + logger_from_string + " ----> " + next_node.label)
 
@@ -565,11 +573,10 @@ def run_socre_core(cyrce_input, graph, control_mode='csf', run_mode=['residual']
                         # Determine if threat actor gains INITIAL ACCESS to entity
                         if seeking_initial_access:
                             if attack_action == 'misuse':
-                                # access = True  # this is for an insider, who we assume to have initial access and we assume is malicious
-                                access = True
+                                access = True  # this is for an insider, who we assume to have initial access and we assume is malicious
                             else:
                                 if scenario.attackThreatType == 'thirdparty':  # hacking modality
-                                    # access = True  # assume third party has initial access at least 90% of the time
+                                    # assume third party has initial access at least 90% of the time, based on capability
                                     access = initial_access_thirdparty_RV[iteration] < \
                                              initial_access_thirdparty_level_RV[iteration]
                                 else:
@@ -626,72 +633,90 @@ def run_socre_core(cyrce_input, graph, control_mode='csf', run_mode=['residual']
                         next_node.assets[0].manifest['access'][iteration] = access
 
         # Collect MCS results to calculate the outputs we want (for the single target node)
+        scoring_ceilings_risk = cyrce_input.config.risk_upper_score_bound
+        scoring_ceilings_lh = cyrce_input.config.likelihood_upper_score_bound
+        scoring_ceilings_imp = cyrce_input.config.impact_upper_score_bound
+        a_lh = INPUTS['scoring_coeffs']['likelihood'][0]
+        b_lh = INPUTS['scoring_coeffs']['likelihood'][1]
+        a_imp = INPUTS['scoring_coeffs']['impact'][0]
+        b_imp = INPUTS['scoring_coeffs']['impact'][1]
+        a_risk = INPUTS['scoring_coeffs']['risk'][0]
+        b_risk = INPUTS['scoring_coeffs']['risk'][1]
+
+        results_df = pd.DataFrame(columns=['label', 'os', 'ip', 'lh', 'impact', 'risk'])
+        i = 0
         #        for a in [_ for _ in all_entities.list if _.type == 'server' and _.critical]:
-        for a in [_ for _ in all_entities.list if _.machine_group in attack_mg_target[0].label and _.critical]:
+#        for a in [_ for _ in all_entities.list if _.machine_group in attack_mg_target[0].label and _.critical]:
+        for a in all_entities.list:
             a.lh_vec = probability_scale_factor * a.manifest['access']
             a.imp_vec = a.manifest['impact']
             a.risk_vec = np.multiply(a.lh_vec, a.imp_vec)
+            results_df.loc[i, 'label'] = a.label
+            results_df.loc[i, 'os'] = a.properties['os']
+            results_df.loc[i, 'ip'] = a.properties['ip_address']
+            results_df.loc[i, 'lh'] = round(np.mean(a.lh_vec), 3)
+            results_df.loc[i, 'impact'] = round(np.mean(a.imp_vec), 1)
+            results_df.loc[i, 'risk'] = round(np.mean(a.risk_vec), 1)
+            i += 1
 
-            # Computing confidence intervals
-            #   Raw
-            a.LH_confInt = get_confidence_interval(a.lh_vec, alpha=INPUTS['confidenceAlpha'])
-            a.imp_confInt = get_confidence_interval(a.imp_vec[a.manifest['access'] == 1],
-                                                    alpha=INPUTS['confidenceAlpha'])
-            a.risk_confInt = get_confidence_interval(a.risk_vec, alpha=INPUTS['confidenceAlpha'])
-
-            #   Levels as vectors
-            #       Risk
-            tmpRiskTransformed_vec = compute_transformed_vec(a.risk_vec, INPUTS['scoring_lambdas']['risk'])
-            #       Likelihood
-            tmpLHTransformed_vec = compute_transformed_vec(a.lh_vec, INPUTS['scoring_lambdas']['likelihood'])
-            #       Impact
-            tmpImpactTransformed_vec = compute_transformed_vec(a.imp_vec, INPUTS['scoring_lambdas']['impact'])
-
-            # Compute the "Level" CIs (requires calc of levels for all runs - "vecs")
-            #   Risk
-            riskLevel_vec = compute_levels(tmpRiskTransformed_vec, INPUTS['scoring_coeffs']['risk'])
-            a.riskLevel_confInt = max(min(2.5, get_confidence_interval(riskLevel_vec[riskLevel_vec > 0],
-                                                                       alpha=INPUTS['confidenceAlpha'])), 0)
-            #   Likelihood
-            LHLevel_vec = compute_levels(tmpLHTransformed_vec, INPUTS['scoring_coeffs']['likelihood'])
-            a.LHLevel_confInt = max(min(2.5, get_confidence_interval(LHLevel_vec[LHLevel_vec > 0],
-                                                                     alpha=INPUTS['confidenceAlpha'])), 0)
-            #   Impact
-            impactLevel_vec = compute_levels(tmpImpactTransformed_vec, INPUTS['scoring_coeffs']['impact'])
-            a.impactLevel_confInt = max(min(2.5, get_confidence_interval(impactLevel_vec[impactLevel_vec > 0],
-                                                                         alpha=INPUTS['confidenceAlpha'])), 0)
-
-            # Compute variances
-            #   Raw
-            a.LH_var = float(np.var(a.lh_vec))
-            a.imp_var = float(np.var(a.imp_vec))
-            a.risk_var = np.var(a.risk_vec)
-
-            #   Levels
-            a.riskLevel_var = np.var(riskLevel_vec)
-            a.LHLevel_var = np.var(LHLevel_vec)
-            a.impactLevel_var = np.var(impactLevel_vec)
-
-            # Compute mean Levels (the results we return)
-            #   Risk
-            riskTransformed = compute_transformed_vec(np.mean(a.risk_vec), INPUTS['scoring_lambdas']['risk'])
-            a.riskLevel = max(min(5, compute_levels(riskTransformed, INPUTS['scoring_coeffs']['risk'])), 0)
-
-            #   Likelihood
-            LHTransformed = compute_transformed_vec(np.mean(a.lh_vec), INPUTS['scoring_lambdas']['likelihood'])
-            a.LHLevel = max(min(5, compute_levels(LHTransformed, INPUTS['scoring_coeffs']['likelihood'])), 0)
-
-            #   Impact
-            impactTransformed = compute_transformed_vec(np.mean(a.imp_vec), INPUTS['scoring_lambdas']['likelihood'])
-            a.impactLevel = max(min(5, compute_levels(impactTransformed, INPUTS['scoring_coeffs']['impact'])), 0)
-
-            # Compute mean raw values
-            a.lh = np.mean(a.lh_vec)
-            if np.sum(a.manifest['access']) == 0:
-                a.imp = 0.
-            else:
-                a.imp = np.mean(a.imp_vec[a.manifest['access'] > 0])
-            a.risk = np.mean(a.risk_vec)
+            # # Computing confidence intervals
+            # #   Raw
+            # a.LH_confInt = 0.1 * a.lh
+            # a.risk_confInt = get_confidence_interval(a.risk_vec, alpha=INPUTS['confidenceAlpha'])
+            #
+            # #   Levels as vectors
+            # #       Risk
+            # tmpRiskTransformed_vec = compute_transformed_vec(a.risk_vec, INPUTS['scoring_lambdas']['risk'])
+            # #       Likelihood
+            # tmpLHTransformed_vec = compute_transformed_vec(a.lh_vec, INPUTS['scoring_lambdas']['likelihood'])
+            # #       Impact
+            # tmpImpactTransformed_vec = compute_transformed_vec(a.imp_vec, INPUTS['scoring_lambdas']['impact'])
+            #
+            # # Compute the "Level" CIs (requires calc of levels for all runs - "vecs")
+            # #   Risk
+            # riskLevel_vec = compute_levels(tmpRiskTransformed_vec, INPUTS['scoring_coeffs']['risk'])
+            # a.riskLevel_confInt = max(min(2.5, get_confidence_interval(riskLevel_vec[riskLevel_vec > 0],
+            #                                                            alpha=INPUTS['confidenceAlpha'])), 0)
+            # #   Likelihood
+            # LHLevel_vec = compute_levels(tmpLHTransformed_vec, INPUTS['scoring_coeffs']['likelihood'])
+            # a.LHLevel_confInt = max(min(2.5, get_confidence_interval(LHLevel_vec[LHLevel_vec > 0],
+            #                                                          alpha=INPUTS['confidenceAlpha'])), 0)
+            # #   Impact
+            # impactLevel_vec = compute_levels(tmpImpactTransformed_vec, INPUTS['scoring_coeffs']['impact'])
+            # a.impactLevel_confInt = max(min(2.5, get_confidence_interval(impactLevel_vec[impactLevel_vec > 0],
+            #                                                              alpha=INPUTS['confidenceAlpha'])), 0)
+            #
+            # # Compute variances
+            # #   Raw
+            # a.LH_var = float(np.var(a.lh_vec))
+            # a.imp_var = float(np.var(a.imp_vec))
+            # a.risk_var = np.var(a.risk_vec)
+            #
+            # #   Levels
+            # a.riskLevel_var = np.var(riskLevel_vec)
+            # a.LHLevel_var = np.var(LHLevel_vec)
+            # a.impactLevel_var = np.var(impactLevel_vec)
+            #
+            # # Compute mean Levels (the results we return)
+            # #   Risk
+            # riskTransformed = compute_transformed_vec(np.mean(a.risk_vec), INPUTS['scoring_lambdas']['risk'])
+            # a.riskLevel = max(min(5, compute_levels(riskTransformed, INPUTS['scoring_coeffs']['risk'])), 0)
+            #
+            # #   Likelihood
+            # LHTransformed = compute_transformed_vec(np.mean(a.lh_vec), INPUTS['scoring_lambdas']['likelihood'])
+            # a.LHLevel = max(min(5, compute_levels(LHTransformed, INPUTS['scoring_coeffs']['likelihood'])), 0)
+            #
+            # #   Impact
+            # impactTransformed = compute_transformed_vec(np.mean(a.imp_vec), INPUTS['scoring_lambdas']['likelihood'])
+            # a.impactLevel = max(min(5, compute_levels(impactTransformed, INPUTS['scoring_coeffs']['impact'])), 0)
+            #
+            # # Compute mean raw values
+            # a.lh = np.mean(a.lh_vec)
+            # if np.sum(a.manifest['access']) == 0:
+            #     a.imp = 0.
+            # else:
+            #     a.imp = np.mean(a.imp_vec[a.manifest['access'] > 0])
+            # a.risk = np.mean(a.risk_vec)
 
             # SPM diagnostics
             # if not deployed and not sweep:
@@ -724,23 +749,22 @@ def run_socre_core(cyrce_input, graph, control_mode='csf', run_mode=['residual']
             #     attackMotivators=float(attackMotivator),
             #     directImpact=float(directImpactValue),
             #     indirectImpact=float(indirectImpactValue))))
-
-    print(a.label)
-    return CyrceOutput(
-        overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
-        overallResidualLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
-        overallInherentImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
-        overallResidualImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
-        overallInherentRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
-        overallResidualRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
-        attack_surface=float(attack_surface),
-        exploitability=exploitability,
-        vulnerability=vulnerability,
-        threatActorCapacity=threat_actor.properties['capability'],
-        threat_level=float(np.mean(threat_level)),
-        probability_scale_factor0=float(probability_scale_factor0),
-        probability_scale_factor=float(probability_scale_factor),
-        attackMotivators=float(attack_motivator),
-        directImpact=float(direct_impact_value),
-        indirectImpact=float(indirect_impact_value)
-    )
+    return results_df
+    # return CyrceOutput(
+    #     overallInherentLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+    #     overallResidualLikelihood=ValueVar(float(a.lh), a.LH_var, a.LH_confInt),
+    #     overallInherentImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+    #     overallResidualImpact=ValueVar(float(a.imp), a.imp_var, a.imp_confInt),
+    #     overallInherentRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
+    #     overallResidualRiskLevel=ValueVar(a.riskLevel, float(a.riskLevel_var), a.riskLevel_confInt),
+    #     attack_surface=float(attack_surface),
+    #     exploitability=exploitability,
+    #     vulnerability=vulnerability,
+    #     threatActorCapacity=threat_actor.properties['capability'],
+    #     threat_level=float(np.mean(threat_level)),
+    #     probability_scale_factor0=float(probability_scale_factor0),
+    #     probability_scale_factor=float(probability_scale_factor),
+    #     attackMotivators=float(attack_motivator),
+    #     directImpact=float(direct_impact_value),
+    #     indirectImpact=float(indirect_impact_value)
+    # )

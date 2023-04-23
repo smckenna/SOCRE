@@ -26,6 +26,7 @@ class CyrceResource(Resource):
         json_data = request.json
         cyrceInput = self.jsonToInput(json_data)
         response = run_socre_core(cyrceInput, graph)
+        print(response)
         return response.reprJSON()
 
     def jsonToInput(self, json_data):

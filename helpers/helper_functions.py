@@ -24,7 +24,7 @@ def perform_scoring(x, a, b, factor=1):
 def scale_transform(x, factor, percentile=0.001):
     a = np.quantile(x, percentile)
     b = np.quantile(x, 1 - percentile)
-    return factor / (b - a), factor*a / (b - a)
+    return factor / (b - a), factor * a / (b - a)
 
 
 def compute_metric(a, b, method='multiply'):
@@ -52,38 +52,41 @@ def fetch_mitre_nist(version=10, local=True):
     return ttp_to_controls
 
 
-def generate_pert_random_variables(modeValue=0.5, gamma=2.0, nIterations=1000):
+def generate_pert_random_variables(random_state, mode_value=0.5, gamma=2.0, nIterations=1000):
     """
     The Beta-PERT methodology was developed in the context of Program Evaluation and Review Technique (PERT). It is
     based on a pessimistic estimate (minimum value), a most likely estimate (mode), and an optimistic estimate
     (maximum value), typically derived through expert elicitation.
 
-    :param modeValue: the mode
+    :param random_state: random state
+    :param mode_value: the mode
     :param gamma: the spread parameter
     :param nIterations: number of values to generate
     :return: nIterations samples from the specified PERT distribution
     """
-    maxValue = 1
-    return PERT(0, modeValue, maxValue, gamma).rvs(size=nIterations)
+    max_value = 1
+    return PERT(0, mode_value, max_value, gamma).rvs(size=nIterations, random_state=random_state)
 
 
-def generate_gaussian_random_variables(mean=0.0, stdDev=1.0, nIterations=1000):
+def generate_gaussian_random_variables(random_state, mean=0.0, std_dev=1.0, nIterations=1000):
     """
+    :param random_state: random state
     :param mean: mean
-    :param stdDev: standard deviation
+    :param std_dev: standard deviation
     :param nIterations: number of values to generate
     :return: nIterations samples from the normal distribution
     """
-    return norm.rvs(loc=mean, scale=stdDev, size=nIterations)
+    return norm.rvs(loc=mean, scale=std_dev, size=nIterations, random_state=random_state)
 
 
-def generate_uniform_random_variables(nIterations=1000):
+def generate_uniform_random_variables(random_state, nIterations=1000):
     """
     Generate random variables from the uniform distribution from 0 to 1
+    :param random_state: random state
     :param nIterations: number of values to generate
     :return: nIterations samples from the unit uniform distribution
     """
-    return uniform.rvs(loc=0, scale=1, size=nIterations)
+    return uniform.rvs(loc=0, scale=1, size=nIterations, random_state=random_state)
 
 
 def fetch_excel_data(url, sheet_name, use_cols=None, skip_rows=0, data_type=str):
@@ -192,7 +195,7 @@ def parse_ip_ranges(entry):
     return ip
 
 
-def random_bounded_gaussian(m, v, size=None, lower_bound=0.01, upper_bound=0.99):
+def random_bounded_gaussian(m, v, random_state, size=None, lower_bound=0.01, upper_bound=0.99):
     """
     Bounded Gaussian random number generation
     param m: float or array_like of floats
@@ -216,7 +219,7 @@ def random_bounded_gaussian(m, v, size=None, lower_bound=0.01, upper_bound=0.99)
     """
 
     try:
-        out = np.clip(np.random.normal(np.asarray(m), np.sqrt(np.asarray(v)), size), lower_bound, upper_bound)
+        out = np.clip(random_state.random.normal(np.asarray(m), np.sqrt(np.asarray(v)), size), lower_bound, upper_bound)
     except:
         out = None
 
@@ -289,12 +292,12 @@ def get_tactic_index(foo):
     return idx
 
 
-def small_poisson(x):
-    return np.random.poisson(x * 10000) * INPUTS['timeWindow'] / (10000 * 1)
+def small_poisson(x, time_win, random_state):
+    return random_state.random.poisson(x * 10000) * time_win / (10000 * 365.)
 
 
-def small_binom_rvs(n, p, size):
-    return binom.rvs(n, p * 10000, size) / 10000.
+def small_binom_rvs(n, p, size, random_state):
+    return binom.rvs(n, p * 10000, size, random_state=random_state) / 10000.
 
 
 def sigmoid(x, a=-1.0):
